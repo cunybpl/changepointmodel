@@ -3,7 +3,7 @@ from changepointmodel.savings import AdjustedSavingsResult, AshraeAdjustedSaving
 from changepointmodel.pmodels import EnergyParameterModelCoefficients
 import numpy as np
 from changepointmodel import factories, predsum, schemas, scoring, loads
-
+from .conftest import EnergyChangepointModelResultFactory, SavingsResultFactory
 
 # factories.EnergyChangepointModelResultFactory
 
@@ -63,10 +63,10 @@ def test_energychangepointmodelresultfactory_correctly_configures_schema(mocker)
     mocker.patch.object(nac, 'calculate', return_value=predsum.PredictedSum(value=42.,))
     
     # this should not fail to build
-    res = factories.EnergyChangepointModelResultFactory.create(d, l, s, nac)
-    assert res.scores is not None 
-    assert res.load is not None
-    assert res.nac is not None
+    res = EnergyChangepointModelResultFactory.create(d, l, s, nac)
+    assert res['scores'] is not None 
+    assert res['load'] is not None
+    assert res['nac'] is not None
 
 def test_savingsresultfactory_correctly_configures_schema(mocker): 
 
@@ -97,9 +97,9 @@ def test_savingsresultfactory_correctly_configures_schema(mocker):
     adjcalc = AshraeAdjustedSavingsCalculator()
     mocker.patch.object(adjcalc, 'save', return_value=AdjustedSavingsResult(np.array([42.,]), 42., 42., 42., 42.))
 
-    normcalc = AshraeNormalizedSavingsCalculator(X_pre=np.array([[100.],]), X_post=np.array([[200.,]]))
+    normcalc = AshraeNormalizedSavingsCalculator(X_norms=np.array([[100.],]*12))
     mocker.patch.object(normcalc, 'save', return_value=NormalizedSavingsResult(np.array([42.,]),np.array([42.,]),42., 42., 42., 42.))
     
 
-    res = factories.SavingsResultFactory.create(dpre, dpost, adjcalc, normcalc)
-    res = factories.SavingsResultFactory.create(dpre, dpost, adjcalc, normcalc, l, l, s)
+    res = SavingsResultFactory.create(dpre, dpost, adjcalc, normcalc)
+    res = SavingsResultFactory.create(dpre, dpost, adjcalc, normcalc, l, l, s)

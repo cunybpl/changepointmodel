@@ -1,21 +1,11 @@
 """Defines types to use as inputs to CurvefitEstimator. This is agnostic of function since 
 NumpyArray can be n-dimensional
 """
-
-from dataclasses import dataclass
-from datetime import datetime
-from .predsum import PredictedSum
 import numpy as np
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 import pydantic
-
-from .scoring import Score
-from .savings import AdjustedSavingsResult, NormalizedSavingsResult
-from .pmodels import EnergyParameterModelCoefficients
-from .loads import Load
-
-from .nptypes import AnyByAnyNDArrayField, NByOneNDArrayField, OneDimNDArrayField, AnyByAnyNDArray
+from .nptypes import AnyByAnyNDArrayField, OneDimNDArrayField, AnyByAnyNDArray
 
 
 class NpConfig: 
@@ -64,44 +54,44 @@ class CurvefitEstimatorDataModel(pydantic.BaseModel):
 # NOTE output data schemas are now just plain wrappers around internal dataclasses as per issue-12
 # pydantic is only used as input validation for this lib... 
 
-class NormalizedSavingsResultData(pydantic.BaseModel): 
+# class NormalizedSavingsResultData(pydantic.BaseModel): 
 
-    X_pre: NByOneNDArrayField
-    X_post: NByOneNDArrayField
-    confidence_interval: float
-    result: NormalizedSavingsResult
+#     X_pre: NByOneNDArrayField
+#     X_post: NByOneNDArrayField
+#     confidence_interval: float
+#     result: NormalizedSavingsResult
 
-    class Config(NpConfig): ... 
-
-
-
-class AdjustedSavingsResultData(pydantic.BaseModel): 
-    confidence_interval: float
-    result: AdjustedSavingsResult
-
-    class Config(NpConfig): ... 
+#     class Config(NpConfig): ... 
 
 
 
-class EnergyChangepointModelResult(pydantic.BaseModel): 
-    name: str 
-    coeffs: EnergyParameterModelCoefficients
-    pred_y: OneDimNDArrayField
-    load: Optional[Load]=None
-    scores: Optional[List[Score]]=None
-    input_data: Optional[CurvefitEstimatorDataModel]=None
-    nac: Optional[PredictedSum]=None
+# class AdjustedSavingsResultData(pydantic.BaseModel): 
+#     confidence_interval: float
+#     result: AdjustedSavingsResult
 
-    class Config(NpConfig): ... 
+#     class Config(NpConfig): ... 
+
+
+
+# class EnergyChangepointModelResult(pydantic.BaseModel): 
+#     name: str 
+#     coeffs: EnergyParameterModelCoefficients
+#     pred_y: OneDimNDArrayField
+#     load: Optional[Load]=None
+#     scores: Optional[List[Score]]=None
+#     input_data: Optional[CurvefitEstimatorDataModel]=None
+#     nac: Optional[PredictedSum]=None
+
+#     class Config(NpConfig): ... 
 
 
         
-class SavingsResult(pydantic.BaseModel): 
+# class SavingsResult(pydantic.BaseModel): 
 
-    pre: EnergyChangepointModelResult 
-    post: EnergyChangepointModelResult
-    adjusted_savings: AdjustedSavingsResultData
-    normalized_savings: Optional[NormalizedSavingsResultData]=None
+#     pre: EnergyChangepointModelResult 
+#     post: EnergyChangepointModelResult
+#     adjusted_savings: AdjustedSavingsResultData
+#     normalized_savings: Optional[NormalizedSavingsResultData]=None
 
-    class Config(NpConfig): ... 
+#     class Config(NpConfig): ... 
         

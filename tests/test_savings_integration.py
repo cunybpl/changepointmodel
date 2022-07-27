@@ -6,6 +6,7 @@ from changepointmodel import factories
 import numpy as np
 from changepointmodel import calc
 from changepointmodel import savings
+from .conftest import SavingsResultFactory
 
 
 
@@ -51,28 +52,28 @@ def test_savings_integration_with_pre_and_post(generated_3pc_data, generated_4p_
     adjusted_saving = savings.AshraeAdjustedSavingsCalculator()
     
     norms = np.array([ i+1 for i in Xdata])
-    normalized_saving = savings.AshraeNormalizedSavingsCalculator(norms.reshape(-1, 1), norms.reshape(-1, 1))
+    normalized_saving = savings.AshraeNormalizedSavingsCalculator(norms.reshape(-1, 1))
 
     threepcload = threepc.create_load_aggregator()
     fourpload = fourp.create_load_aggregator()
-    savings_result = factories.SavingsResultFactory.create(fitted_est_pre, fitted_est_post,
+    savings_result = SavingsResultFactory.create(fitted_est_pre, fitted_est_post,
                                             adjusted_saving, normalized_saving, threepcload, fourpload, scorer, scorer
                                             )
     
     #pre basic check
-    assert savings_result.pre.name == '3PC'
-    assert savings_result.pre.scores[0].ok == True
-    assert savings_result.pre.scores[1].ok == True
+    assert savings_result['pre']['name'] == '3PC'
+    assert savings_result['pre']['scores'][0].ok == True
+    assert savings_result['pre']['scores'][1].ok == True
 
     #post basic check
-    assert savings_result.post.name == '4P'
-    assert savings_result.post.scores[0].ok == True
-    assert savings_result.post.scores[1].ok == True
+    assert savings_result['post']['name'] == '4P'
+    assert savings_result['post']['scores'][0].ok == True
+    assert savings_result['post']['scores'][1].ok == True
 
     #adujusted savings
-    assert savings_result.adjusted_savings.confidence_interval == 0.8
-    assert savings_result.adjusted_savings.result.total_savings
+    assert savings_result['adjusted_savings']['confidence_interval'] == 0.8
+    assert savings_result['adjusted_savings']['result'].total_savings
 
     #normalized savings
-    assert savings_result.normalized_savings.confidence_interval == 0.8
-    assert savings_result.normalized_savings.result.total_savings
+    assert savings_result['normalized_savings']['confidence_interval'] == 0.8
+    assert savings_result['normalized_savings']['result'].total_savings

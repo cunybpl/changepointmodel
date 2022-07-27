@@ -78,7 +78,15 @@ class Cvrmse(ScoringFunction):
 
 class ScoreEval(IEval): 
 
-    def __init__(self, scorer: ScoringFunction, threshold: float, method: Comparator): 
+    def __init__(self, scorer: ScoringFunction, threshold: float, method: Comparator):
+        """Evaluates a single score using the scoring function and reports whether the Score meets the 
+        threshold.
+
+        Args:
+            scorer (ScoringFunction): _description_
+            threshold (float): _description_
+            method (Comparator): _description_
+        """
         self._scorer = scorer
         self._threshold = threshold
         self._method = method 
@@ -92,7 +100,20 @@ class ScoreEval(IEval):
 class Scorer(object): 
 
     def __init__(self, evals: List[IEval]):
+        """Executes a series of ScoreEvals.
+
+        Args:
+            evals (List[IEval]): _description_
+        """
         self._evals = evals
 
-    def check(self, estimator: EnergyChangepointEstimator) -> List[Score]: 
+    def check(self, estimator: EnergyChangepointEstimator) -> List[Score]:
+        """Given a changepoint estimator return a list of score evaluations against the result.
+
+        Args:
+            estimator (EnergyChangepointEstimator): _description_
+
+        Returns:
+            List[Score]: _description_
+        """
         return [e.ok(estimator) for e in self._evals]

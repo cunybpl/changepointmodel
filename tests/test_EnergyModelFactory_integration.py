@@ -6,6 +6,9 @@ from changepointmodel import factories
 import numpy as np
 from changepointmodel import calc
 
+from .conftest import EnergyChangepointModelResultFactory
+
+
 def test_energymodelfactory_integration_with_2p(generated_2p_data):
     Xdata = np.array(generated_2p_data['x']) 
     ydata = np.array(generated_2p_data['y']) 
@@ -33,29 +36,29 @@ def test_energymodelfactory_integration_with_2p(generated_2p_data):
     # # fit the changepoint model 
     name, fitted_est = estimator.fit_one(estimator.model, input_data.X, input_data.y) 
     load = twop.create_load_aggregator()
-    result = factories.EnergyChangepointModelResultFactory.create(fitted_est, load, scorer)
+    result = EnergyChangepointModelResultFactory.create(fitted_est, load, scorer)
 
     #model
-    assert result.name == "2P"
+    assert result['name'] == "2P"
     
     #coeffs
-    assert result.coeffs.yint != 0.0
-    assert result.coeffs.changepoints == None
-    assert len(result.coeffs.slopes) == 1
+    assert result['coeffs'].yint != 0.0
+    assert result['coeffs'].changepoints == None
+    assert len(result['coeffs'].slopes) == 1
 
     #loads
-    assert result.load.heating == 0.0
-    assert result.load.cooling != 0 
-    assert result.load.base != 0
+    assert result['load'].heating == 0.0
+    assert result['load'].cooling != 0 
+    assert result['load'].base != 0
 
     #scores
-    assert result.scores[0].name == 'r2'
-    assert result.scores[0].ok in (True, False)
-    assert result.scores[1].name == 'cvrmse'
-    assert result.scores[1].ok in (True, False)
+    assert result['scores'][0].name == 'r2'
+    assert result['scores'][0].ok in (True, False)
+    assert result['scores'][1].name == 'cvrmse'
+    assert result['scores'][1].ok in (True, False)
 
     #pred
-    assert len(result.pred_y)
+    assert len(result['pred_y'])
 
 def test_integration_with_3pc(generated_3pc_data):
     Xdata = np.array(generated_3pc_data['x']) 
@@ -81,29 +84,29 @@ def test_integration_with_3pc(generated_3pc_data):
 
     name, fitted_est = estimator.fit_one(estimator.model, input_data.X, input_data.y)
     load = threepc.create_load_aggregator()
-    result = factories.EnergyChangepointModelResultFactory.create(fitted_est, load, scorer)
+    result = EnergyChangepointModelResultFactory.create(fitted_est, load, scorer)
 
     #model
-    assert result.name == "3PC"
+    assert result['name'] == "3PC"
     
     #coeffs
-    assert result.coeffs.yint != 0.0
-    assert len(result.coeffs.changepoints) == 1
-    assert len(result.coeffs.slopes) == 1
+    assert result['coeffs'].yint != 0.0
+    assert len(result['coeffs'].changepoints) == 1
+    assert len(result['coeffs'].slopes) == 1
 
     #loads
-    assert result.load.heating == 0.0
-    assert result.load.cooling != 0 
-    assert result.load.base != 0
+    assert result['load'].heating == 0.0
+    assert result['load'].cooling != 0 
+    assert result['load'].base != 0
 
     #scores
-    assert result.scores[0].name == 'r2'
-    assert result.scores[0].ok in (True, False)
-    assert result.scores[1].name == 'cvrmse'
-    assert result.scores[1].ok in (True, False)
+    assert result['scores'][0].name == 'r2'
+    assert result['scores'][0].ok in (True, False)
+    assert result['scores'][1].name == 'cvrmse'
+    assert result['scores'][1].ok in (True, False)
 
     #pred
-    assert len(result.pred_y)
+    assert len(result['pred_y'])
 
 def test_integration_with_3ph(generated_3ph_data):
     Xdata = np.array(generated_3ph_data['x']) 
@@ -129,29 +132,29 @@ def test_integration_with_3ph(generated_3ph_data):
 
     name, fitted_est = estimator.fit_one(estimator.model, input_data.X, input_data.y) 
     load = threeph.create_load_aggregator()
-    result = factories.EnergyChangepointModelResultFactory.create(fitted_est, load, scorer)
+    result = EnergyChangepointModelResultFactory.create(fitted_est, load, scorer)
 
     #model
-    assert result.name == "3PH"
+    assert result['name'] == "3PH"
     
     #coeffs
-    assert result.coeffs.yint != 0.0
-    assert len(result.coeffs.changepoints) == 1
-    assert len(result.coeffs.slopes) == 1
+    assert result['coeffs'].yint != 0.0
+    assert len(result['coeffs'].changepoints) == 1
+    assert len(result['coeffs'].slopes) == 1
 
     #loads
-    assert result.load.cooling == 0.0
-    assert result.load.heating != 0 
-    assert result.load.base != 0
+    assert result['load'].cooling == 0.0
+    assert result['load'].heating != 0 
+    assert result['load'].base != 0
 
     #scores
-    assert result.scores[0].name == 'r2'
-    assert result.scores[0].ok in (True, False)
-    assert result.scores[1].name == 'cvrmse'
-    assert result.scores[1].ok in (True, False)
+    assert result['scores'][0].name == 'r2'
+    assert result['scores'][0].ok in (True, False)
+    assert result['scores'][1].name == 'cvrmse'
+    assert result['scores'][1].ok in (True, False)
 
     #pred
-    assert len(result.pred_y)
+    assert len(result['pred_y'])
 
 def test_integration_with_4p(generated_4p_data):
     Xdata = np.array(generated_4p_data['x']) 
@@ -177,29 +180,29 @@ def test_integration_with_4p(generated_4p_data):
 
     name, fitted_est = estimator.fit_one(estimator.model, input_data.X, input_data.y) 
     load = fourp.create_load_aggregator()
-    result = factories.EnergyChangepointModelResultFactory.create(fitted_est, load, scorer)
+    result = EnergyChangepointModelResultFactory.create(fitted_est, load, scorer)
 
     #model
-    assert result.name == "4P"
+    assert result['name'] == "4P"
     
     #coeffs
-    assert result.coeffs.yint != 0.0
-    assert len(result.coeffs.changepoints) == 1
-    assert len(result.coeffs.slopes) == 2
+    assert result['coeffs'].yint != 0.0
+    assert len(result['coeffs'].changepoints) == 1
+    assert len(result['coeffs'].slopes) == 2
 
     #loads
-    assert result.load.cooling != 0.0
-    assert result.load.heating != 0 
-    assert result.load.base != 0
+    assert result['load'].cooling != 0.0
+    assert result['load'].heating != 0 
+    assert result['load'].base != 0
 
     #scores
-    assert result.scores[0].name == 'r2'
-    assert result.scores[0].ok in (True, False)
-    assert result.scores[1].name == 'cvrmse'
-    assert result.scores[1].ok in (True, False)
+    assert result['scores'][0].name == 'r2'
+    assert result['scores'][0].ok in (True, False)
+    assert result['scores'][1].name == 'cvrmse'
+    assert result['scores'][1].ok in (True, False)
 
     #pred
-    assert len(result.pred_y)
+    assert len(result['pred_y'])
 
 
 def test_integration_with_5p(generated_4p_data):
@@ -226,27 +229,27 @@ def test_integration_with_5p(generated_4p_data):
     
     name, fitted_est = estimator.fit_one(estimator.model, input_data.X, input_data.y)
     load = fivep.create_load_aggregator()
-    result = factories.EnergyChangepointModelResultFactory.create(fitted_est, load, scorer)
+    result = EnergyChangepointModelResultFactory.create(fitted_est, load, scorer)
 
     #model
-    assert result.name == "5P"
+    assert result['name'] == "5P"
     
     #coeffs
-    assert result.coeffs.yint != 0.0
-    assert len(result.coeffs.changepoints) == 2
-    assert len(result.coeffs.slopes) == 2
+    assert result['coeffs'].yint != 0.0
+    assert len(result['coeffs'].changepoints) == 2
+    assert len(result['coeffs'].slopes) == 2
 
     #loads
-    assert result.load.cooling != 0.0
-    assert result.load.heating != 0 
-    assert result.load.base != 0
+    assert result['load'].cooling != 0.0
+    assert result['load'].heating != 0 
+    assert result['load'].base != 0
 
     #scores
-    assert result.scores[0].name == 'r2'
-    assert result.scores[0].ok in (True, False)
-    assert result.scores[1].name == 'cvrmse'
-    assert result.scores[1].ok in (True, False)
+    assert result['scores'][0].name == 'r2'
+    assert result['scores'][0].ok in (True, False)
+    assert result['scores'][1].name == 'cvrmse'
+    assert result['scores'][1].ok in (True, False)
 
     #pred
-    assert len(result.pred_y)
+    assert len(result['pred_y'])
 

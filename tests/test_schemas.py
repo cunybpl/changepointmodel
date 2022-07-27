@@ -85,98 +85,6 @@ def test_curvefitestimatordatamodel_returns_valid_json():
 
 
 
-def test_energychangepointmodelresult_with_required_data(schema_coeffs): 
-
-    data = {
-        'name': 'model', 
-        'coeffs': schema_coeffs, 
-        'pred_y': np.array([1., 2., 3.])
-    }
-
-    schemas.EnergyChangepointModelResult(**data)
-
-
-def test_energychangepointmodelresult_with_optional_data(
-    schema_coeffs, 
-    schema_load, 
-    schema_scores): 
-
-    data = {
-        'name': 'model', 
-        'coeffs': schema_coeffs, 
-        'pred_y': np.array([1., 2., 3.]), 
-        'load': schema_load, 
-        'scores': schema_scores
-    }
-
-    schemas.EnergyChangepointModelResult(**data)
-
-
-
-def test_adjustedenergychangepointmodelsavingsresult_with_required_data(
-    schema_coeffs, 
-    schema_load, 
-    schema_scores, 
-    schema_adjustedsavings, 
-    schema_normalizedsavings): 
-
-    pre = {
-        'name': 'model', 
-        'coeffs': schema_coeffs, 
-        'pred_y': np.array([1., 2., 3.]), 
-        'load': schema_load, 
-        'scores': schema_scores
-    }
-
-    post = {
-        'name': 'model', 
-        'coeffs': schema_coeffs, 
-        'pred_y': np.array([1., 2., 3.]), 
-        'load': schema_load, 
-        'scores': schema_scores
-    }
-
-    data = {
-        'pre': pre, 
-        'post': post, 
-        'adjusted_savings': schema_adjustedsavings
-    }
-
-    schemas.SavingsResult(**data)
-
-
-def test_adjustedenergychangepointmodelsavingsresult_with_non_required_data(
-    schema_coeffs, 
-    schema_load, 
-    schema_scores, 
-    schema_adjustedsavings, 
-    schema_normalizedsavings): 
-
-    pre = {
-        'name': 'model', 
-        'coeffs': schema_coeffs, 
-        'pred_y': np.array([1., 2., 3.]), 
-        'load': schema_load, 
-        'scores': schema_scores
-    }
-
-    post = {
-        'name': 'model', 
-        'coeffs': schema_coeffs, 
-        'pred_y': np.array([1., 2., 3.]), 
-        'load': schema_load, 
-        'scores': schema_scores
-    }
-
-    data = {
-        'pre': pre, 
-        'post': post, 
-        'adjusted_savings': schema_adjustedsavings, 
-        'normalized_savings': schema_normalizedsavings
-    }
-
-    schemas.SavingsResult(**data)
-
 
 def test_openapi_schemas_are_correctly_generated_for_custom_nptypes(): 
 
@@ -217,9 +125,3 @@ def test_openapi_schemas_are_correctly_generated_for_custom_nptypes():
     assert schema['definitions']['Check']['properties']['a'] == a 
     assert schema['definitions']['Check']['properties']['b'] == b 
     assert schema['definitions']['Check']['properties']['c'] == c 
-
-
-def test_schema_generation_for_pydantic_models(): 
-
-    schemas.SavingsResult.schema()
-    schemas.EnergyChangepointModelResult.schema()

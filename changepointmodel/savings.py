@@ -112,38 +112,25 @@ class AshraeAdjustedSavingsCalculator(AbstractSavings, ISavingsCalculator):
 
 class AshraeNormalizedSavingsCalculator(AbstractSavings, ISavingsCalculator): 
     
-    def __init__(self, X_pre: NByOneNDArray, X_post: NByOneNDArray, confidence_interval: float=0.80):
+    def __init__(self, X_norms: NByOneNDArray, confidence_interval: float=0.80):
         """The Normalized savings calculations provide pre and post X arrays. These are used within the context
-        of weather normalized savings for option-c retrofits 
+        of weather normalized savings for option-c retrofits.
 
         Args:
-            X_pre (NByOneNDArray): Normalized X data for the pre-retrofit period.
-            X_post (NByOneNDArray): Normalized X data for the post-retrofit period. 
+            X_norms (NByOneNDArray): Normalized X data for pre-retrofit and post-retrofit related normalized calculation.
             confidence_interval (float, optional): The confidence interval for the uncertainity calculations. Defaults to 0.80.
-
-        Raises:
-            ValueError: Raised if X_pre and X_post are not the same length.
         """
         super().__init__(confidence_interval=confidence_interval)
-        
-        if len(X_pre) != len(X_post): 
-            raise ValueError('X_pre and X_post must be the same len')
-        
-        self._X_pre = X_pre 
-        self._X_post = X_post
+        self._X_norms = X_norms
 
     @property 
-    def X_pre(self):
-        return self._X_pre 
-    
-    @property 
-    def X_post(self): 
-        return self._X_post
+    def X_norms(self):
+        return self._X_norms 
 
     def save(self, 
         pre: EnergyChangepointEstimator, 
         post: EnergyChangepointEstimator,  
-        ) -> NormalizedSavingsResult:  # X is an array of normalized temperature data
+        ) -> NormalizedSavingsResult:  
         """The controller method for the normalized savings calculation.
 
         Args:
@@ -155,8 +142,8 @@ class AshraeNormalizedSavingsCalculator(AbstractSavings, ISavingsCalculator):
         """
 
         # setup
-        normalized_pred_y_pre = pre.predict(self._X_pre)   # XXX expensive :(
-        normalized_pred_y_post = post.predict(self._X_post)
+        normalized_pred_y_pre = pre.predict(self._X_norms)   # XXX expensive :(
+        normalized_pred_y_post = post.predict(self._X_norms)
         
         gross_normalized_pred_y_pre = np.sum(normalized_pred_y_pre)
         gross_normalized_pred_y_post = np.sum(normalized_pred_y_post)
@@ -170,7 +157,7 @@ class AshraeNormalizedSavingsCalculator(AbstractSavings, ISavingsCalculator):
         pre_p = len(pre.coeffs)
         post_p = len(post.coeffs)
 
-        n_norm = len(self._X_pre)
+        n_norm = len(self._X_norms)
 
         savings = libsavings.weather_normalized(
             gross_normalized_pred_y_pre, 

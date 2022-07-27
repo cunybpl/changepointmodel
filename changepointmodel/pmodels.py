@@ -191,6 +191,18 @@ class ParameterModelFunction(ModelFunction):
         bounds: Union[BoundCallable, Bound], 
         parameter_model: EnergyParameterModel, 
         coefficients_parser: ICoefficientParser):
+        """A Parameter model function for our changepoint modeling is composed 
+        of a callable "model" function (This is most likely 1d), Bounds, EnergyParameterModel 
+        and CoefficientsParser. These must be configured at runtime for each available model 
+        to run in an application in order to get the benefits of our API.
+
+        Args:
+            name (str): _description_
+            f (ModelCallable): _description_
+            bounds (Union[BoundCallable, Bound]): _description_
+            parameter_model (EnergyParameterModel): _description_
+            coefficients_parser (ICoefficientParser): _description_
+        """
         
         super().__init__(name, f, bounds)
         self._parameter_model = parameter_model 

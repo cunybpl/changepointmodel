@@ -1,9 +1,10 @@
 from changepointmodel.pmodels import EnergyParameterModelCoefficients
-from changepointmodel import estimator, scoring
+from changepointmodel import estimator, scoring, schemas, savings, loads, predsum, utils
 import pytest 
 import numpy as np
 import json
 import random
+from typing import Optional
 
 from . import GENERATED_DATA_ALL_MODELS_FILE, GENERATED_DATA_POST
 
@@ -181,3 +182,102 @@ def generated_5p_post_data(generated_data_for_post):
     return _parse_generated_mode_data(generated_data_for_post, '5P')
 
 
+
+class EnergyChangepointModelResultFactory(object): 
+
+    @classmethod
+    def create(cls, 
+        estimator: estimator.EnergyChangepointEstimator, 
+        loads: Optional[loads.EnergyChangepointLoadsAggregator]=None, 
+        scorer: Optional[scoring.Scorer]=None, 
+        nac: Optional[predsum.PredictedSumCalculator]=None): 
+        """Constructs a EnergyChangepointModelResult given at least a fit estimator. Optionally will 
+        provide scores, nac and loads if given configured instances of their handlers.
+
+        Args:
+            estimator (EnergyChangepointEstimator): energy changpoint estimator object.
+            loads (Optional[loads.EnergyChangepointLoadsAggregator], optional): load object. Defaults to None.
+            scorer (Optional[scoring.Scorer], optional): scorer. Defaults to None.
+            nac (Optional[PredictedSumCalculator], optional): nac. Defaults to None.
+
+        Returns:
+            schemas.EnergyChangepointModelResult: [description]
+        """
+
+        input_data = schemas.CurvefitEstimatorDataModel(
+            X=estimator.X, 
+            y=estimator.y, 
+            sigma=estimator.sigma, 
+            absolute_sigma=estimator.absolute_sigma)
+
+        data = {
+            'name': estimator.name,
+            'input_data': {
+                'X': estimator.X, 
+                'y': estimator.y, 
+                'sigma': estimator.sigma, 
+                'absolute_sigma': estimator.absolute_sigma
+            }, 
+            'coeffs': utils.parse_coeffs(estimator.model, estimator.coeffs), 
+            'pred_y': estimator.pred_y, 
+            'load': loads.aggregate(estimator) if loads else None, 
+            'scores': scorer.check(estimator) if scorer else None, 
+            'nac': nac.calculate(estimator) if nac else None
+        }
+
+        return data
+
+
+class SavingsResultFactory(object): 
+
+    @classmethod 
+    def create(cls, 
+        pre: estimator.EnergyChangepointEstimator, 
+        post: estimator.EnergyChangepointEstimator, 
+        adjcalc: savings.AshraeAdjustedSavingsCalculator, 
+        normcalc: Optional[savings.AshraeNormalizedSavingsCalculator]=None, 
+        pre_loads: Optional[loads.EnergyChangepointLoadsAggregator]=None, 
+        post_loads: Optional[loads.EnergyChangepointLoadsAggregator]=None, 
+        pre_scorer: Optional[scoring.Scorer]=None,
+        post_scorer: Optional[scoring.Scorer]=None): 
+        """Creates a SavingsResult given pre and post retrofit models. Designed for usage with the 
+        option-c methodology.
+
+        Args:
+            pre (EnergyChangepointEstimator): Pre changepoint estimator obj 
+            post (EnergyChangepointEstimator): Post changepoint estimator obj
+            adjcalc (AshraeAdjustedSavingsCalculator): Adjusted calc instance
+            normcalc (Optional[AshraeNormalizedSavingsCalculator], optional): normalized calc instance. Defaults to None.
+            pre_loads (Optional[loads.EnergyChangepointLoadsAggregator], optional): Pre load obj. Defaults to None.
+            post_loads (Optional[loads.EnergyChangepointLoadsAggregator], optional): Post load obj. Defaults to None.
+            pre_scorer (Optional[Scorer], optional): scorer for pre modeling. Defaults to None.
+            post_scorer (Optional[Scorer], optional): scorer for post modeling. Defaults to None.
+
+        Returns:
+            schemas.SavingsResult: The SavingsResult.
+        """
+
+        pre_result = EnergyChangepointModelResultFactory.create(pre, pre_loads, pre_scorer)
+        post_result = EnergyChangepointModelResultFactory.create(post, post_loads, post_scorer)   
+
+        adj = dict(
+            result=adjcalc.save(pre, post), 
+            confidence_interval=adjcalc.confidence_interval)
+        
+        if normcalc: 
+            result = normcalc.save(pre, post)
+            norm = dict(
+                X_pre=normcalc.X_norms, 
+                X_post=normcalc.X_norms, 
+                confidence_interval=normcalc.confidence_interval, 
+                result=result)
+        else: 
+            norm = None 
+
+        data = {
+            'pre': pre_result, 
+            'post': post_result, 
+            'adjusted_savings': adj, 
+            'normalized_savings': norm
+        }
+        return data
