@@ -5,23 +5,33 @@ from typing import Optional
 import numpy as np
 from ..nptypes import OneDimNDArray
 
-#just testing for lib
+# just testing for lib
 # NOTE moved logic handling null up one level but might get rid of that completely
+
 
 # XXX possibly remove this... possibly use absolute value here .. tynabot do research...
 def _positive_sum(arr: OneDimNDArray) -> float:
     return np.sum(arr * (arr > 0))
 
 
-def _heating_predicted_load(X: OneDimNDArray, pred_y: OneDimNDArray, yint: float, changepoint: float=-np.inf): 
+def _heating_predicted_load(
+    X: OneDimNDArray, pred_y: OneDimNDArray, yint: float, changepoint: float = -np.inf
+):
     return (X < changepoint) * (pred_y - yint)
 
 
-def _cooling_predicted_load(X: OneDimNDArray, pred_y: OneDimNDArray, yint: float, changepoint: float=-np.inf): 
+def _cooling_predicted_load(
+    X: OneDimNDArray, pred_y: OneDimNDArray, yint: float, changepoint: float = -np.inf
+):
     return (X > changepoint) * (pred_y - yint)
 
 
-def heatload(X: OneDimNDArray, pred_y: OneDimNDArray, yint: float, changepoint: Optional[float]=np.inf) -> float:
+def heatload(
+    X: OneDimNDArray,
+    pred_y: OneDimNDArray,
+    yint: float,
+    changepoint: Optional[float] = np.inf,
+) -> float:
     """Calculate the heatload (auc) for both linear and changepoint models.
 
     Args:
@@ -35,9 +45,11 @@ def heatload(X: OneDimNDArray, pred_y: OneDimNDArray, yint: float, changepoint: 
     """
     predicted_loads = _heating_predicted_load(X, pred_y, yint, changepoint)
     return _positive_sum(predicted_loads)
-    
 
-def coolingload(X: OneDimNDArray, pred_y: OneDimNDArray, yint: float, changepoint: float=-np.inf) -> float:
+
+def coolingload(
+    X: OneDimNDArray, pred_y: OneDimNDArray, yint: float, changepoint: float = -np.inf
+) -> float:
     """The cooling load (auc) for both linear and changepoint models.
 
     Args:
@@ -53,7 +65,7 @@ def coolingload(X: OneDimNDArray, pred_y: OneDimNDArray, yint: float, changepoin
     return _positive_sum(predicted_loads)
 
 
-def baseload(total_consumption: float, heatload: float, coolingload: float) -> float: 
+def baseload(total_consumption: float, heatload: float, coolingload: float) -> float:
     """The baseload calculated as the total_consumption minus loads.
 
     Args:
@@ -64,5 +76,6 @@ def baseload(total_consumption: float, heatload: float, coolingload: float) -> f
     Returns:
         float: The baseload.
     """
-    return total_consumption - heatload - coolingload   # XXX if this is negative should we zero it out? Probably it should never be negative because energy... 
-
+    return (
+        total_consumption - heatload - coolingload
+    )  # XXX if this is negative should we zero it out? Probably it should never be negative because energy...

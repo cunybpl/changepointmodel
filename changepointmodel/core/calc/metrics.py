@@ -7,13 +7,16 @@ from sklearn import metrics as sklmetrics
 
 from ..nptypes import OneDimNDArray
 
-#XXX use nptyping here.
+# XXX use nptyping here.
 
-def _cvrmse_from_rmse(rmse: float, y: OneDimNDArray) -> float: 
+
+def _cvrmse_from_rmse(rmse: float, y: OneDimNDArray) -> float:
     return rmse / np.mean(y)
 
 
-def r2_score(y: OneDimNDArray, y_pred: OneDimNDArray, **kwargs) -> Union[float, OneDimNDArray[float]]:
+def r2_score(
+    y: OneDimNDArray, y_pred: OneDimNDArray, **kwargs
+) -> Union[float, OneDimNDArray[float]]:
     """A wrapper around sklearn.metrics.r2_score. Returns the r2 score for predicted y values.
 
     Args:
@@ -26,8 +29,10 @@ def r2_score(y: OneDimNDArray, y_pred: OneDimNDArray, **kwargs) -> Union[float, 
     return sklmetrics.r2_score(y, y_pred, **kwargs)
 
 
-def rmse(y: OneDimNDArray, y_pred: OneDimNDArray, **kwargs) -> Union[float, OneDimNDArray[float]]:
-    """The root mean square error using sklearn.metrics.mean_squared_error. We set squared=False 
+def rmse(
+    y: OneDimNDArray, y_pred: OneDimNDArray, **kwargs
+) -> Union[float, OneDimNDArray[float]]:
+    """The root mean square error using sklearn.metrics.mean_squared_error. We set squared=False
     according to the sklearn docs to get rmse.
 
     Args:
@@ -40,8 +45,10 @@ def rmse(y: OneDimNDArray, y_pred: OneDimNDArray, **kwargs) -> Union[float, OneD
     return sklmetrics.mean_squared_error(y, y_pred, squared=False, **kwargs)
 
 
-def cvrmse(y: OneDimNDArray, y_pred: OneDimNDArray, **kwargs) -> Union[float, OneDimNDArray[float]]:
-    """Calculates the cvrmse from rmse. 
+def cvrmse(
+    y: OneDimNDArray, y_pred: OneDimNDArray, **kwargs
+) -> Union[float, OneDimNDArray[float]]:
+    """Calculates the cvrmse from rmse.
 
     Args:
         y (OneDimNDArray): The original y values.
@@ -52,4 +59,3 @@ def cvrmse(y: OneDimNDArray, y_pred: OneDimNDArray, **kwargs) -> Union[float, On
     """
     rmse = sklmetrics.mean_squared_error(y, y_pred, squared=False, **kwargs)
     return _cvrmse_from_rmse(rmse, y)
-

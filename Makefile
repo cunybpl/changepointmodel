@@ -20,7 +20,8 @@ clean-test:
 
 
 test: clean-test
-	pytest --cov=changepointmodel --cov-report=term-missing tests/ -v -s
+	-pytest --cov=changepointmodel --cov-report=term-missing tests/ -v -s
+	mypy changepointmodel --strict
 
 test-single-module: clean-test
 	pytest $(module) -v -s

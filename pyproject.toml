@@ -13,11 +13,14 @@ python = ">=3.8, <3.12"
 pydantic = "^1.8.2"
 scikit-learn = "^1.2.1"
 nptyping = "^1.4.3"
+mypy = "^1.0.1"
+black = "^23.1.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.2.1"
 pytest-cov = "^4.0.0"
 pytest-mock = "^3.10.0"
+mypy = "^1.1.1"
 [[tool.poetry.dev-dependencies.coverage]]
 extras = [ "toml",]
 version = "^6.0"
@@ -27,4 +30,3 @@ python = ">=3.6,<3.7"
 extras = [ "toml",]
 version = ">=6.5"
 python = ">=3.7"
-

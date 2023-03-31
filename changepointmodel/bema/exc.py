@@ -2,37 +2,31 @@
 """
 from typing import Dict
 import sys
-import traceback 
+import traceback
 
 
-class BemaChangepointException(Exception): 
-
-    def __init__(self, 
-        info: Dict[str, str]=None, 
-        message: str=""): 
-        
+class BemaChangepointException(Exception):
+    def __init__(self, info: Dict[str, str] = None, message: str = ""):
         self.info = info
         self.message = message
         super().__init__(message)
 
-    def __str__(self): 
+    def __str__(self):
         return f"{self.message}"
 
-    def __repr__(self): 
+    def __repr__(self):
         return str(vars(self))
 
 
-
-def bema_changepoint_exception_wrapper(err: Exception, message: str, **info_kwargs) -> BemaChangepointException: 
-
+def bema_changepoint_exception_wrapper(
+    err: Exception, message: str, **info_kwargs
+) -> BemaChangepointException:
     exc_type, exc_value, exc_traceback = sys.exc_info()
     info = {
-        **info_kwargs, 
-        'exc': err.__class__.__name__,  # giving name here but not stack trace... 
-        'tb': repr(traceback.format_exception(exc_type, exc_value, exc_traceback))
+        **info_kwargs,
+        "exc": err.__class__.__name__,  # giving name here but not stack trace...
+        "tb": repr(traceback.format_exception(exc_type, exc_value, exc_traceback)),
     }
 
     e = BemaChangepointException(info=info, message=message)
     return e
-
-

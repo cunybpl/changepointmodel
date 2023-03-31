@@ -16,15 +16,16 @@ from . import loads
 from dataclasses import dataclass
 from . import pmodels as pmodels
 
-class EnergyModelConfigurationError(TypeError): 
-    """ raised if an EnergyModel is constructed with the wrong load_handler"""
+
+class EnergyModelConfigurationError(TypeError):
+    """raised if an EnergyModel is constructed with the wrong load_handler"""
 
 
 @dataclass
 class EnergyModel(object):
-    """ The purpose of this container object is to keep the correct ParameterModelFunction 
+    """The purpose of this container object is to keep the correct ParameterModelFunction
     and LoadHandler in the same place.
-    """ 
+    """
 
     model: pmodels.ParameterModelFunction
     load_handler: loads.AbstractLoadHandler
@@ -33,13 +34,13 @@ class EnergyModel(object):
         """Spawn a new estimator from the model.
 
         Returns:
-            EnergyChangepointEstimator: An instance 
+            EnergyChangepointEstimator: An instance
         """
         return EnergyChangepointEstimator(model=self.model)
-    
-    def create_load_aggregator(self) -> loads.EnergyChangepointLoadsAggregator: 
+
+    def create_load_aggregator(self) -> loads.EnergyChangepointLoadsAggregator:
         """Convenience method to get a reference to this model's load.
-        
+
         XXX I added this to create a public API since this part of the object might change.
 
         Returns:
@@ -48,19 +49,20 @@ class EnergyModel(object):
         return loads.EnergyChangepointLoadsAggregator(handler=self.load_handler)
 
 
-class EnergyModelFactory(object): 
-
-    @classmethod 
-    def create(cls, 
-        name: str, 
-        f: pmodels.ModelCallable, 
-        b: Union[pmodels.BoundCallable, pmodels.Bound], 
-        parser: pmodels.ICoefficientParser, 
-        parameter_model: pmodels.EnergyParameterModel, 
-        load_handler: loads.AbstractLoadHandler) -> EnergyModel:
-        """Construct an model and a loads factory simultaneously. 
-        Creates a convenient container object which will help keep model dependent 
-        calculations together within more complicated workflows. 
+class EnergyModelFactory(object):
+    @classmethod
+    def create(
+        cls,
+        name: str,
+        f: pmodels.ModelCallable,
+        b: Union[pmodels.BoundCallable, pmodels.Bound],
+        parser: pmodels.ICoefficientParser,
+        parameter_model: pmodels.EnergyParameterModel,
+        load_handler: loads.AbstractLoadHandler,
+    ) -> EnergyModel:
+        """Construct an model and a loads factory simultaneously.
+        Creates a convenient container object which will help keep model dependent
+        calculations together within more complicated workflows.
 
         Args:
             name (str): [description]
@@ -70,21 +72,22 @@ class EnergyModelFactory(object):
             parameter_model (pmodels.EnergyParameterModel): [description]
             load_handler (loads.AbstractLoadHandler): [description]
 
-        Raises: 
+        Raises:
             EnergyModelConfigurationError(TypeError): If the parameter model and load_handler values are incorrect.
 
         Returns:
             EnergyModel: [description]
         """
         # XXX maybe should try to figure out a way to make sure this config is valid.
-        # These internals to construct ParameterModelFunction simply are not aware of each other at the moment so it is difficult. 
+        # These internals to construct ParameterModelFunction simply are not aware of each other at the moment so it is difficult.
 
         model = pmodels.ParameterModelFunction(name, f, b, parameter_model, parser)
-        
-        if not isinstance(model.parameter_model, load_handler.model.__class__):  # we can at least check this one so we do... this is similar to loads.py
+
+        if not isinstance(
+            model.parameter_model, load_handler.model.__class__
+        ):  # we can at least check this one so we do... this is similar to loads.py
             raise EnergyModelConfigurationError(
-                f'parameter_model and load_handler models do not match: {parameter_model.__class__}, {load_handler.model.__class__}') 
-        
+                f"parameter_model and load_handler models do not match: {parameter_model.__class__}, {load_handler.model.__class__}"
+            )
+
         return EnergyModel(model=model, load_handler=load_handler)
-
-
