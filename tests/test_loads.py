@@ -1,7 +1,7 @@
 import pytest
 from changepointmodel.core.pmodels import (
     EnergyParameterModelCoefficients,
-    ModelFunction,
+    ParameterModelFunction,
     ParameterModelFunction,
     TwoParameterModel,
 )

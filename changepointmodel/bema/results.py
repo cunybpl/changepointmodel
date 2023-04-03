@@ -16,26 +16,30 @@ from changepointmodel.core.savings import (
 )
 
 from .base import BemaChangepointResultContainer
+from typing import Optional
+
+from changepointmodel.core.pmodels import ParamaterModelCallableT, EnergyParameterModelT
 
 
 class BemaChangepointResult(object):
     def create(
         self,
-        estimator: EnergyChangepointEstimator,
-        loads: EnergyChangepointLoadsAggregator,
+        estimator: EnergyChangepointEstimator[
+            ParamaterModelCallableT, EnergyParameterModelT
+        ],
+        loads: EnergyChangepointLoadsAggregator[EnergyParameterModelT],
         scorer: Scorer,
-        nac: PredictedSumCalculator,
-    ):
-        original_ordering = estimator._original_ordering  # XXX is this access safe?
+        nac: Optional[PredictedSumCalculator],
+    ) -> EnergyChangepointModelResult:
+        # XXX change this access to public #67
+        original_ordering = estimator._original_ordering
+        assert estimator.model is not None
+
         data = {
             "name": estimator.name,
             "input_data": {
-                "X": unargsort_1d_idx(
-                    estimator.X, original_ordering
-                ),  # becomes 1 dimensional
+                "X": unargsort_1d_idx(estimator.X, original_ordering),
                 "y": unargsort_1d_idx(estimator.y, original_ordering),
-                # 'sigma': estimator.sigma,
-                # 'absolute_sigma': estimator.absolute_sigma
             },
             # XXX some of these are dataclasses and doesn't integrate well with pydantic, .___dict___ for now
             "coeffs": vars(parse_coeffs(estimator.model, estimator.coeffs)),
@@ -45,31 +49,35 @@ class BemaChangepointResult(object):
             "nac": vars(nac.calculate(estimator)) if nac else None,
         }
 
-        return EnergyChangepointModelResult(**data)
+        return EnergyChangepointModelResult(**data)  # type: ignore
 
 
 class BemaSavingsResult(object):
     def create(
         self,
-        pre: BemaChangepointResultContainer,
-        post: BemaChangepointResultContainer,
+        pre: BemaChangepointResultContainer[
+            ParamaterModelCallableT, EnergyParameterModelT
+        ],
+        post: BemaChangepointResultContainer[
+            ParamaterModelCallableT, EnergyParameterModelT
+        ],
         adjcalc: AshraeAdjustedSavingsCalculator,
-        normcalc: AshraeNormalizedSavingsCalculator = None,
-    ):
-        # XXX How else? we have to modify the state of the result after drilling into post.estimator
+        normcalc: Optional[AshraeNormalizedSavingsCalculator] = None,
+    ) -> SavingsResult:
         result = adjcalc.save(pre.estimator, post.estimator)
+
         ordering = post.estimator._original_ordering
         result.adjusted_y = unargsort_1d_idx(result.adjusted_y, ordering)
 
         adj = AdjustedSavingsResultData(
-            result=vars(result), confidence_interval=adjcalc.confidence_interval
+            result=vars(result), confidence_interval=adjcalc.confidence_interval  # type: ignore
         )
 
         # XXX this is only calculated if norms were provided... otherwise it returns null
         if normcalc:
-            result = normcalc.save(pre.estimator, post.estimator)
+            result_ = normcalc.save(pre.estimator, post.estimator)
             norm = NormalizedSavingsResultData(
-                confidence_interval=normcalc.confidence_interval, result=vars(result)
+                confidence_interval=normcalc.confidence_interval, result=vars(result_)  # type: ignore
             )
         else:
             norm = None
@@ -80,4 +88,4 @@ class BemaSavingsResult(object):
             "adjusted_savings": adj,
             "normalized_savings": norm,
         }
-        return SavingsResult(**data)
+        return SavingsResult(**data)  # type: ignore

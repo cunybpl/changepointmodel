@@ -2,6 +2,7 @@ from .pmodels import (
     ParameterModelFunction,
     EnergyParameterModelT,
     EnergyParameterModelCoefficients,
+    ParamaterModelCallableT,
 )
 from typing import Tuple, List
 import numpy as np
@@ -11,6 +12,8 @@ from .nptypes import (
     ArgSortRetType,
     AnyByAnyNDArrayField,
 )
+
+import numpy.typing as npt
 
 
 def argsort_1d_idx(X: CpModelXArray, y: OneDimNDArrayField) -> ArgSortRetType:
@@ -28,7 +31,7 @@ def argsort_1d_idx(X: CpModelXArray, y: OneDimNDArrayField) -> ArgSortRetType:
 
 
 def unargsort_1d_idx(
-    arr: AnyByAnyNDArrayField, original_order: List[int]
+    arr: npt.NDArray[np.float64], original_order: List[int]
 ) -> OneDimNDArrayField:
     """flattens and resorts numpy array back to its original order.
 
@@ -45,7 +48,8 @@ def unargsort_1d_idx(
 
 
 def parse_coeffs(
-    model: ParameterModelFunction[EnergyParameterModelT], coeffs: Tuple[float, ...]
+    model: ParameterModelFunction[ParamaterModelCallableT, EnergyParameterModelT],
+    coeffs: Tuple[float, ...],
 ) -> EnergyParameterModelCoefficients:
     """Given an ParameterModelFunction and raw coefficients tuple from CurvefitEstimator.fit
     will return an EnerguParameterModelCoefficients accessor object.

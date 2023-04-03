@@ -14,13 +14,16 @@ import numpy.typing as npt
 _cvrmse_score = Cvrmse()
 
 import abc
+from .pmodels import ParamaterModelCallableT, EnergyParameterModelT
+
 
 # I have to pass the pydantic ndarray objects as fields so
 # that we can validate the data later.
 
 
 def _get_adjusted(
-    pre: EnergyChangepointEstimator, post: EnergyChangepointEstimator
+    pre: EnergyChangepointEstimator[ParamaterModelCallableT, EnergyParameterModelT],
+    post: EnergyChangepointEstimator[ParamaterModelCallableT, EnergyParameterModelT],
 ) -> OneDimNDArray[np.float64]:
     return pre.adjust(post)
 
@@ -47,7 +50,11 @@ class NormalizedSavingsResult(object):
 class ISavingsCalculator(abc.ABC):
     @abc.abstractmethod
     def save(
-        self, pre: EnergyChangepointEstimator, post: EnergyChangepointEstimator
+        self,
+        pre: EnergyChangepointEstimator[ParamaterModelCallableT, EnergyParameterModelT],
+        post: EnergyChangepointEstimator[
+            ParamaterModelCallableT, EnergyParameterModelT
+        ],
     ) -> AdjustedSavingsResult:
         ...
 
@@ -55,7 +62,11 @@ class ISavingsCalculator(abc.ABC):
 class INormalizedCalculator(abc.ABC):
     @abc.abstractmethod
     def save(
-        self, pre: EnergyChangepointEstimator, post: EnergyChangepointEstimator
+        self,
+        pre: EnergyChangepointEstimator[ParamaterModelCallableT, EnergyParameterModelT],
+        post: EnergyChangepointEstimator[
+            ParamaterModelCallableT, EnergyParameterModelT
+        ],
     ) -> NormalizedSavingsResult:
         ...
 
@@ -85,7 +96,11 @@ class AbstractSavings(abc.ABC):
 
 class AshraeAdjustedSavingsCalculator(AbstractSavings, ISavingsCalculator):
     def save(
-        self, pre: EnergyChangepointEstimator, post: EnergyChangepointEstimator
+        self,
+        pre: EnergyChangepointEstimator[ParamaterModelCallableT, EnergyParameterModelT],
+        post: EnergyChangepointEstimator[
+            ParamaterModelCallableT, EnergyParameterModelT
+        ],
     ) -> AdjustedSavingsResult:
         """Controller method for calculated AdjustedSavings values and uncertainiies.
 
@@ -160,8 +175,10 @@ class AshraeNormalizedSavingsCalculator(AbstractSavings, INormalizedCalculator):
 
     def save(
         self,
-        pre: EnergyChangepointEstimator,
-        post: EnergyChangepointEstimator,
+        pre: EnergyChangepointEstimator[ParamaterModelCallableT, EnergyParameterModelT],
+        post: EnergyChangepointEstimator[
+            ParamaterModelCallableT, EnergyParameterModelT
+        ],
     ) -> NormalizedSavingsResult:
         """The controller method for the normalized savings calculation.
 

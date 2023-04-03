@@ -6,6 +6,7 @@ from .nptypes import NByOneNDArray
 from .estimator import EnergyChangepointEstimator
 from dataclasses import dataclass
 import numpy as np
+from .pmodels import ParamaterModelCallableT, EnergyParameterModelT
 
 
 @dataclass
@@ -22,7 +23,12 @@ class PredictedSumCalculator(object):
         """
         self._X = X
 
-    def calculate(self, estimator: EnergyChangepointEstimator) -> PredictedSum:
+    def calculate(
+        self,
+        estimator: EnergyChangepointEstimator[
+            ParamaterModelCallableT, EnergyParameterModelT
+        ],
+    ) -> PredictedSum:
         """Given the estimator will predict on this object's X and return its sum.
 
         Args:

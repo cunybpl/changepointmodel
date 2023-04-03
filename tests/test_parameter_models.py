@@ -3,7 +3,7 @@ from changepointmodel.core.pmodels import (
     FiveParameterModel,
     FourParameterCoefficientsParser,
     FourParameterModel,
-    ModelFunction,
+    ParameterModelFunction,
     ParameterModelFunction,
     ThreeParameterCoefficientsParser,
     ThreeParameterModel,

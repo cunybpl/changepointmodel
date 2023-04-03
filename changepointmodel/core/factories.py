@@ -16,7 +16,7 @@ from . import loads
 from dataclasses import dataclass
 from . import pmodels as pmodels
 
-from .pmodels import EnergyParameterModelT
+from .pmodels import EnergyParameterModelT, ParamaterModelCallableT
 
 
 class EnergyModelConfigurationError(TypeError):
@@ -24,15 +24,19 @@ class EnergyModelConfigurationError(TypeError):
 
 
 @dataclass
-class EnergyModel(Generic[EnergyParameterModelT]):
+class EnergyModel(Generic[ParamaterModelCallableT, EnergyParameterModelT]):
     """The purpose of this container object is to keep the correct ParameterModelFunction
     and LoadHandler in the same place.
     """
 
-    model: pmodels.ParameterModelFunction[EnergyParameterModelT]
+    model: pmodels.ParameterModelFunction[
+        ParamaterModelCallableT, EnergyParameterModelT
+    ]
     load_handler: loads.AbstractLoadHandler[EnergyParameterModelT]
 
-    def create_estimator(self) -> EnergyChangepointEstimator:
+    def create_estimator(
+        self,
+    ) -> EnergyChangepointEstimator[ParamaterModelCallableT, EnergyParameterModelT]:
         """Spawn a new estimator from the model.
 
         Returns:
@@ -53,17 +57,17 @@ class EnergyModel(Generic[EnergyParameterModelT]):
         return loads.EnergyChangepointLoadsAggregator(handler=self.load_handler)
 
 
-class EnergyModelFactory(Generic[EnergyParameterModelT]):
+class EnergyModelFactory(Generic[ParamaterModelCallableT, EnergyParameterModelT]):
     @classmethod
     def create(
         cls,
         name: str,
-        f: pmodels.ModelCallable,
+        f: ParamaterModelCallableT,
         b: Union[pmodels.BoundCallable, pmodels.Bound],
         parser: pmodels.ICoefficientParser,
         parameter_model: EnergyParameterModelT,
         load_handler: loads.AbstractLoadHandler[EnergyParameterModelT],
-    ) -> EnergyModel[EnergyParameterModelT]:
+    ) -> EnergyModel[ParamaterModelCallableT, EnergyParameterModelT]:
         """Construct an model and a loads factory simultaneously.
         Creates a convenient container object which will help keep model dependent
         calculations together within more complicated workflows.

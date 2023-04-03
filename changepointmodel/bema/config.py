@@ -3,8 +3,9 @@ from changepointmodel.core.calc import models as cpmodels
 from changepointmodel.core.calc import bounds as cpbounds
 from changepointmodel.core.estimator import EnergyChangepointEstimator
 from changepointmodel.core.loads import EnergyChangepointLoadsAggregator
-from changepointmodel.core.factories import EnergyModelFactory
-from typing import List, Tuple
+from changepointmodel.core.factories import EnergyModelFactory, EnergyModel
+from changepointmodel.core.pmodels import ParamaterModelCallableT, EnergyParameterModelT
+from typing import Tuple
 
 
 # NOTE that this part of the API should be thread-safe since the underlying objects in EnergyModels that these factories
@@ -74,8 +75,9 @@ _fivep_changepoint_model = EnergyModelFactory.create(
     _fivep_load_handler,
 )
 
+from typing import Any
 
-_models = {
+_models: dict[str, EnergyModel[Any, Any]] = {
     "2P": _twop_changepoint_model,
     "3PC": _threepc_changepoint_model,
     "3PH": _threeph_changepoint_model,
@@ -86,7 +88,10 @@ _models = {
 
 def get_changepoint_model_pair(
     name: str,
-) -> Tuple[EnergyChangepointEstimator, EnergyChangepointLoadsAggregator]:
+) -> Tuple[
+    EnergyChangepointEstimator[ParamaterModelCallableT, EnergyParameterModelT],
+    EnergyChangepointLoadsAggregator[EnergyParameterModelT],
+]:
     """Returns a Tuple of configured instances of EnergyChangepointEstimator
     and LoadsAggregator for modeling. This must be called to make sure the rest of the running modeling code is
     safe.
@@ -97,5 +102,5 @@ def get_changepoint_model_pair(
     Returns:
         Tuple[EnergyChangepointEstimator, EnergyChangepointLoadsAggregator]: _description_
     """
-    m = _models.get(name)
+    m = _models[name]
     return m.create_estimator(), m.create_load_aggregator()

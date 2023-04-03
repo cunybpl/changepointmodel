@@ -1,10 +1,16 @@
+""" 
+TODO: description 
+
+XXX many of the parse methods should be marked as protected and better documented
+"""
+
 from changepointmodel.core.nptypes import (
     OneDimNDArrayField,
     NByOneNDArrayField,
     AnyByAnyNDArrayField,
 )
 import pydantic
-from typing import List, Optional, Union, Any, Dict, Tuple
+from typing import List, Optional, Union, Any, Dict, Tuple, Annotated
 import numpy as np
 from changepointmodel.core.schemas import NpConfig, CurvefitEstimatorDataModel
 from pydantic import Field
@@ -12,6 +18,8 @@ import enum
 
 
 SklScoreReturnType = Union[float, AnyByAnyNDArrayField, Any]
+
+GenericRecords = List[Dict[str, Any]]
 
 
 # can be moved into a separate module when we have main bema model package or something
@@ -37,13 +45,13 @@ class UsageTemperatureData(pydantic.BaseModel):
     )
 
     @pydantic.validator("oat")
-    def validate_oat(cls, v):
+    def validate_oat(cls, v: List[float]) -> List[float]:
         if len(v) == 0:
             raise ValueError("oat cannot be empty")
         return v
 
     @pydantic.validator("usage")
-    def validate_usage(cls, v, values):
+    def validate_usage(cls, v: List[Any], values: Dict[str, Any]) -> List[float]:
         if len(v) == 0:
             raise ValueError("usage cannot be empty")
         if "oat" in values and len(v) != len(values["oat"]):
@@ -65,23 +73,26 @@ class FilterConfig(pydantic.BaseModel):
     )
 
 
+Threshold = Annotated[float, pydantic.confloat(ge=0, le=1)]
+
+
 # filtered to calcuale savings, but return all the models
 class ChangepointModelConfig(pydantic.BaseModel):
     models: List[str] = Field(
         ..., description="Model types to attempt. Options are 5P, 4P, 3PC, 3PH, 2P."
     )
-    r2_threshold: pydantic.confloat(ge=0, le=1) = Field(
+    r2_threshold: Threshold = Field(
         0.75,
         description="The r2 threshold to report. After modeling we will analyze the r2 and see if it is gte this number.",
     )
-    cvrmse_threshold: pydantic.confloat(ge=0, le=1) = Field(
+    cvrmse_threshold: Threshold = Field(
         0.25,
         description="The cvrmse threshold. After modeling we will analyze the cvrmse value and see if it lte this number.",
     )
     model_filter: Optional[FilterConfig]
 
     @pydantic.validator("models")
-    def validate_models_name(cls, v):
+    def validate_models_name(cls, v: List[str]) -> List[str]:
         for i in v:
             if i not in ["2P", "3PC", "3PH", "4P", "5P"]:
                 raise ValueError(f"{i} not a valid model")
@@ -89,7 +100,7 @@ class ChangepointModelConfig(pydantic.BaseModel):
 
 
 class EnergyChangepointModelRequest(pydantic.BaseModel):
-    nonzero_threshold: pydantic.confloat(le=1, gt=0) = Field(
+    nonzero_threshold: Threshold = Field(
         0.8,
         description="Threshold for percent of number of non-zero input data points.",
     )
@@ -102,9 +113,9 @@ class EnergyChangepointModelRequest(pydantic.BaseModel):
 
     @pydantic.validator("usage")
     def validate_usage_threshold(
-        cls, v, values
-    ):  # usage UsageTemperatureData will get validated first
-        def _validate_with_threshold(value_ls):
+        cls, v: Any, values: Dict[str, Any]
+    ) -> Any:  # usage UsageTemperatureData will get validated first
+        def _validate_with_threshold(value_ls: List[float]) -> None:
             zeros = [i for i in value_ls if i == 0.0]
             percent_non_zeros = 1 - (len(zeros) / len(value_ls))
             if percent_non_zeros < values["nonzero_threshold"]:
@@ -124,12 +135,16 @@ class BaselineChangepointModelRequest(EnergyChangepointModelRequest):
     )
 
     @pydantic.validator("norms")
-    def validate_norms(cls, v):
+    def validate_norms(cls, v: List[float]) -> List[float]:
         if v and len(v) not in [12, 24, 365]:
             raise ValueError(
                 "Invalid length of normalized temperature data. Should be 12 (monthly), 24 (hourly) or 365 (daily)."
             )
         return v
+
+
+ConfidenceInterval = Annotated[float, pydantic.confloat(le=1, ge=0.5)]
+Scalar = Annotated[float, pydantic.confloat(ge=1.0)]
 
 
 class SavingsRequest(pydantic.BaseModel):
@@ -139,11 +154,11 @@ class SavingsRequest(pydantic.BaseModel):
     post: EnergyChangepointModelRequest = Field(
         ..., description="The post-retrofit data for this option-c request."
     )
-    confidence_interval: Optional[pydantic.confloat(le=1, ge=0.5)] = Field(
+    confidence_interval: Optional[ConfidenceInterval] = Field(
         0.8,
         description="Optional confidence interval for savings calculations using monthly data. The library default value is 80%",
     )
-    scalar: Optional[pydantic.confloat(ge=1.0)] = Field(
+    scalar: Optional[Scalar] = Field(
         30.473,
         description="Value to scale savings data. If giving data by per/day values, the default of 30.473 will scale these values to a correct monthly value.",
     )
@@ -153,7 +168,7 @@ class SavingsRequest(pydantic.BaseModel):
     )
 
     @pydantic.validator("pre", "post")
-    def validate_usage(cls, v):
+    def validate_usage(cls, v: Any) -> Any:
         if len(v.usage.usage) != 12 or len(v.usage.oat) != 12:
             raise ValueError(
                 "Pre and post number of points must be 12 to perform monthly savings calculations."
@@ -161,7 +176,7 @@ class SavingsRequest(pydantic.BaseModel):
         return v
 
     @pydantic.validator("norms")
-    def validate_norms(cls, v):
+    def validate_norms(cls, v: Any) -> Any:
         if v and len(v) != 12:
             raise ValueError(
                 "Invalid length of normalized temperature data. Length must be 12 to perform monthly savings calculations."
@@ -206,12 +221,12 @@ class EnergyParameterModelCoefficients(pydantic.BaseModel):
     slopes: List[float]
     changepoints: Optional[List[float]]
 
-    def parse(self, model_type):
+    def parse(self, model_type: str) -> GenericRecords:
         """Complicated business logic to parse and flatten changepointmodel coefficients to
         cpmodelmeasurements so they can go into bemadb for lean rank.
 
         Args:
-            model_type (str): _description_.
+            model_type (str): The name of the model_type provided by caller.
 
         Raises:
             AssertionError: _description_
@@ -232,7 +247,7 @@ class EnergyParameterModelCoefficients(pydantic.BaseModel):
 
         elif model_type == "3PC":
             assert len(self.slopes) == 1
-            assert len(self.changepoints) == 1
+            assert self.changepoints is not None and len(self.changepoints) == 1
             return [
                 {
                     "measurementtype": "cooling_sensitivity",  # NOTE that I am not checking slope here since this should always be positive based on maths in changepointmodel!
@@ -245,7 +260,7 @@ class EnergyParameterModelCoefficients(pydantic.BaseModel):
             ]
         elif model_type == "3PH":
             assert len(self.slopes) == 1
-            assert len(self.changepoints) == 1
+            assert self.changepoints is not None and len(self.changepoints) == 1
             return [
                 {
                     "measurementtype": "heating_sensitivity",  # NOTE that I am not checking slope here since this should always be negative based on maths in changepointmodel!
@@ -258,7 +273,7 @@ class EnergyParameterModelCoefficients(pydantic.BaseModel):
             ]
         elif model_type == "4P":
             assert len(self.slopes) == 2
-            assert len(self.changepoints) == 1
+            assert self.changepoints is not None and len(self.changepoints) == 1
             return [
                 {"measurementtype": "heating_sensitivity", "value": self.slopes[0]},
                 {"measurementtype": "cooling_sensitivity", "value": self.slopes[1]},
@@ -273,7 +288,7 @@ class EnergyParameterModelCoefficients(pydantic.BaseModel):
             ]
         elif model_type == "5P":
             assert len(self.slopes) == 2
-            assert len(self.changepoints) == 2
+            assert self.changepoints is not None and len(self.changepoints) == 2
             return [
                 {"measurementtype": "heating_sensitivity", "value": self.slopes[0]},
                 {"measurementtype": "cooling_sensitivity", "value": self.slopes[1]},
@@ -293,7 +308,7 @@ class EnergyParameterModelCoefficients(pydantic.BaseModel):
 
 class Score(pydantic.BaseModel):
     name: str
-    value: SklScoreReturnType
+    value: float
     threshold: float
     ok: bool
 
@@ -301,12 +316,12 @@ class Score(pydantic.BaseModel):
         """We need to expose the name and value for bemadb.
 
         Returns:
-            Tuple[str, float]: _description_
+            Tuple[str, float]: Name and value
         """
 
         return self.name, self.value
 
-    def parse_for_csv(self):
+    def parse_for_csv(self) -> Dict[str, Any]:
         return {
             self.name: self.value,
             f"{self.name}_threshold": self.threshold,
@@ -328,7 +343,7 @@ class EnergyChangepointModelResult(pydantic.BaseModel):
     pred_y: OneDimNDArrayField
     load: Load
     scores: List[Score]
-    input_data: EnergyChangepointModelInputData  # XXX <--- not a data class...it is returning a dictionary s
+    input_data: EnergyChangepointModelInputData
     nac: Optional[PredictedSum] = None
 
     class Config(NpConfig):
@@ -349,14 +364,14 @@ class EnergyChangepointModelResult(pydantic.BaseModel):
             out[name] = val
         return out
 
-    def _parse_scores_for_csv(self):
-        out = {}
+    def _parse_scores_for_csv(self) -> Dict[str, Any]:
+        out: Dict[str, Any] = {}
         for score in self.scores:
             res = score.parse_for_csv()
             out = {**out, **res}
         return out
 
-    def make_cp_model_result(self):
+    def make_cp_model_result(self) -> Dict[str, Any]:
         """method to make cpmodel results for bemadb changepointmodelresult table.
 
         Returns:
@@ -398,7 +413,7 @@ class EnergyChangepointModelResult(pydantic.BaseModel):
             return [{**i, "model_type": self.name} for i in out]
         return out
 
-    def _flatten_cp_model_measurements(self):
+    def _flatten_cp_model_measurements(self) -> Dict[str, Any]:
         res = self.get_cpmodelmeasurements()
         _measurements = [
             "heating_sensitivity",
@@ -413,7 +428,7 @@ class EnergyChangepointModelResult(pydantic.BaseModel):
             for m_type in _measurements
             if m_type not in act_measurement.keys()
         }
-        return {**act_measurement, **none_measurement}
+        return {**act_measurement, **none_measurement}  # type: ignore
 
     def assemble_full_cp_model_result(self, prepost: str = "") -> Dict[str, Any]:
         """assemble rpc cp model result into flat structure composed of cp model results: socres, coefficients/measurements,
@@ -430,14 +445,14 @@ class EnergyChangepointModelResult(pydantic.BaseModel):
         prepost_ = {"prepost": prepost} if prepost else {}
         return {**measurements, **scores, **prepost_, "model_type": self.name}
 
-    def get_pred_y(self, prepost: str = "") -> List[Dict[str, Any]]:
+    def get_pred_y(self, prepost: str = "") -> GenericRecords:
         """generate a list of predicted usage from rpc cp model result; for csv parsing.
 
         Args:
             prepost (str, optional): add prepost key value label to records if provided. Defaults to ''.
 
         Returns:
-            List[Dict[str, Any]]: a list of predicted usage records with model_type and, optionally, prepost info.
+            GenericRecords: a list of predicted usage records with model_type and, optionally, prepost info.
         """
         meta_data = (
             {"prepost": prepost, "model_type": self.name}
@@ -474,7 +489,7 @@ class AdjustedSavingsResult(pydantic.BaseModel):
             **result,
         }
 
-    def parse_adjusted_usage(self, prepost: str) -> List[Dict[str, Any]]:
+    def parse_adjusted_usage(self, prepost: str) -> GenericRecords:
         """generate a list of adjusted usage records; for csv parsing.
 
         Args:
@@ -522,7 +537,7 @@ class NormalizedSavingsResult(pydantic.BaseModel):
 
     def parse_normalized_usage(
         self, prepost: str, model_name: str = ""
-    ) -> List[Dict[str, Any]]:
+    ) -> GenericRecords:
         """generate a list of nromalized usage records; for csv parsing.
 
         Args:
@@ -567,11 +582,11 @@ class SavingsResult(pydantic.BaseModel):
 
     def parse_prepost_cp_model_results(
         self,
-    ) -> List[Dict[str, Any]]:  # public, not complete; need metadata such as property
+    ) -> GenericRecords:
         """parse pre and post rpc cp model from savings endpoint to a list of flat pre and post cp models
 
         Returns:
-            List[Dict[str, Any]]: list of cp models.
+            GenericRecords: list of cp models.
         """
         pre_model = self._parse_cp_models(prepost="pre")
         post_model = self._parse_cp_models(prepost="post")
@@ -581,27 +596,26 @@ class SavingsResult(pydantic.BaseModel):
         result = self.pre if prepost == "pre" else self.post
         return result.assemble_full_cp_model_result(prepost=prepost)
 
-    # include prepost, model_type
-    def get_predicted_usage(self, prepost: str) -> List[Dict[str, Any]]:
+    def get_predicted_usage(self, prepost: str) -> GenericRecords:
         """generate a list of predicted usage; for csv parsing.
 
         Args:
             prepost (str): prepost label
 
         Returns:
-            List[Dict[str, Any]]: a list of predicted usage
+            GenericRecords: a list of predicted usage
         """
         result = self.pre if prepost == "pre" else self.post
         return result.get_pred_y(prepost=prepost)
 
     def parse_savings_result(
         self,
-    ) -> List[Dict[str, Any]]:  # public, not complete; need metadata
+    ) -> GenericRecords:
         """parse adjusted and normalized savings data from savings endpoint to a list
         of flat and structured saving results.
 
         Returns:
-            List[Dict[str, Any]]: saving results such as percent savings, average savings and percent saving uncertainty.
+            GenericRecords: saving results such as percent savings, average savings and percent saving uncertainty.
         """
         pre_model_type = self._get_model_type(prepost="pre")
         post_model_type = self._get_model_type(prepost="post")
@@ -619,14 +633,12 @@ class SavingsResult(pydantic.BaseModel):
 
     def parse_saving_usage(
         self,
-    ) -> Tuple[
-        List[Dict[str, Any]]
-    ]:  # public, not complete; need bemautility and metadata
+    ) -> Tuple[Any, Any]:
         """parse adjusted and normalized savings data from savings endpoint to a list
         of flat and structured saving related calculation usage.
 
         Returns:
-            Tuple[List[Dict[str, Any]]]: saving related calculation usage such as adjusted and normalized usage.
+            Tuple[GenericRecords]: saving related calculation usage such as adjusted and normalized usage.
         """
         pre_savinge_usage, pre_norm = self._gather_savings_related_usage(prepost="pre")
         post_savinge_usage, post_norm = self._gather_savings_related_usage(
@@ -635,24 +647,18 @@ class SavingsResult(pydantic.BaseModel):
         return pre_savinge_usage + post_savinge_usage, pre_norm + post_norm
 
     def _get_model_type(self, prepost: str) -> str:
-        """get model type of corresponding cp model given prepost label
-
-        Args:
-            prepost (str): prepost label
-
-        Returns:
-            str: model type of cp model
-        """
         model = self.pre if prepost == "pre" else self.post
         return model.name
 
-    # adding model type here just in case they ask me to return more than one models
-    def _gather_savings_related_usage(self, prepost: str):  # private, complete
-        model_name = self._get_model_type(prepost=prepost)  # prepost
+    def _gather_savings_related_usage(
+        self, prepost: str
+    ) -> Tuple[GenericRecords, GenericRecords]:
+        model_name = self._get_model_type(prepost=prepost)
         predicted = self.get_predicted_usage(
             prepost=prepost
         )  # prepost and model name included
         adj = self.adjusted_savings.result.parse_adjusted_usage(prepost=prepost)
+        assert self.normalized_savings is not None
         norm = self.normalized_savings.result.parse_normalized_usage(
             prepost=prepost, model_name=model_name
         )
@@ -661,27 +667,25 @@ class SavingsResult(pydantic.BaseModel):
         ], norm
 
 
-# api response
 class EnergyChangepointModelResponse(pydantic.BaseModel):
     results: List[EnergyChangepointModelResult]
 
     class Config(NpConfig):
         ...
 
-    # XXX could be problematic for the case that it is more than one model cause we are not storing model type for measurements
-    def parse_cp_measurements(self) -> List[Dict[str, Any]]:
+    def parse_cp_measurements(self) -> GenericRecords:
         """parse rpc changepoint model results list to prodcue cp measurements form for bemadb"""
         out = []
-        for res in self.results:  # should be one but also could be more than one
+        for res in self.results:
             out.extend(res.get_cpmodelmeasurements(add_model_type=True))
         return out
 
-    def parse_results_for_csv(self) -> Tuple[List[Dict[str, Any]]]:
+    def parse_results_for_csv(self) -> Tuple[GenericRecords, GenericRecords]:
         """parse rpc changepoint model results list to produce cp model lists and predicted usage list;
         this is for csv parsing.
 
         Returns:
-            Tuple[List[Dict[str, Any]]]: tuple of length 4; cp model lists, saving result list,
+            Tuple[GenericRecords]: tuple of length 4; cp model lists, saving result list,
                                             adjusted usage and normalized usage.
         """
         model_output = []
@@ -698,18 +702,20 @@ class SavingsResponse(pydantic.BaseModel):
     class Config(NpConfig):
         ...
 
-    def parse_results_for_csv(self) -> Tuple[List[Dict[str, Any]]]:
+    def parse_results_for_csv(
+        self,
+    ) -> Tuple[GenericRecords, GenericRecords, GenericRecords, GenericRecords]:
         """parse rpc savings model results list to prodcue cp model lists, saving result list,
             adjusted usage and normalized usage; for csv parsing.
 
         Returns:
-            Tuple[List[Dict[str, Any]]]: tuple of length 4; cp model lists, saving result list,
-                                            adjusted usage and normalized usage.
+            Tuple[GenericRecords, GenericRecords, GenericRecords, GenericRecords]:
+                model output, savings result, savings related usage and norms output
         """
-        model_output = []  # both pre and post up to 25
-        savings_results_output = []
-        savings_related_usage_output = []
-        norms_output = []
+        model_output: GenericRecords = []  # both pre and post up to 25
+        savings_results_output: GenericRecords = []
+        savings_related_usage_output: GenericRecords = []
+        norms_output: GenericRecords = []
         for res in self.results:
             model_output.extend(res.parse_prepost_cp_model_results())
             savings_results_output.extend(res.parse_savings_result())

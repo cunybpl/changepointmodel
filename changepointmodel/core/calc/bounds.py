@@ -20,7 +20,7 @@ OpenBoundCallable = Callable[
 ]
 
 
-def twop(*args, **kwargs) -> Tuple[TwoParameterBoundary, TwoParameterBoundary]:
+def twop(*args, **kwargs) -> Tuple[TwoParameterBoundary, TwoParameterBoundary]:  # type: ignore
     """Energy bound for a twop (linear) model. Essentially returns a constant but we need this to
     conform to the Bounds interface.
 

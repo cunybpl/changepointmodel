@@ -58,5 +58,5 @@ def cvrmse(
     Returns:
         Union[float, OneDimNDArray[float]]: The CVRMSE or array of scores if weighted.
     """
-    rmse = sklmetrics.mean_squared_error(y, y_pred, squared=False, **kwargs)  # type: ignore
+    rmse = sklmetrics.mean_squared_error(y, y_pred, squared=False, **kwargs)
     return rmse / np.mean(y)  # type: ignore

@@ -4,6 +4,7 @@ import numpy as np
 from changepointmodel.core import nptypes, scoring
 from changepointmodel.core.utils import argsort_1d_idx
 from changepointmodel.core.schemas import CurvefitEstimatorDataModel
+from changepointmodel.core.pmodels import ParamaterModelCallableT, EnergyParameterModelT
 from changepointmodel.core.predsum import PredictedSumCalculator
 from changepointmodel.core.estimator import EnergyChangepointEstimator
 from changepointmodel.core.savings import (
@@ -11,6 +12,7 @@ from changepointmodel.core.savings import (
     AshraeNormalizedSavingsCalculator,
 )
 
+from typing import Any
 from . import config
 from .filter_ import ChangepointEstimatorFilter
 from .results import BemaChangepointResult, BemaSavingsResult
@@ -37,11 +39,11 @@ class BemaChangepointModeler(object):
         self,
         oat: List[float],
         usage: List[float],
-        models: List[str] = None,
+        models: Optional[List[str]] = None,
         r2_threshold: float = 0.75,
         cvrmse_threshold: float = 0.5,
-        norms: List[float] = None,
-        estimator_filter: ChangepointEstimatorFilter = None,
+        norms: Optional[List[float]] = None,
+        estimator_filter: Optional[ChangepointEstimatorFilter] = None,
     ):
         """Runs a single set of changepoint models using the API from the `changepointmodel` lib.
 
@@ -55,7 +57,7 @@ class BemaChangepointModeler(object):
             estimator_filter (ChangepointEstimatorFilter, optional): _description_. Defaults to None.
         """
 
-        self._input_data = CurvefitEstimatorDataModel(X=oat, y=usage)
+        self._input_data = CurvefitEstimatorDataModel(X=oat, y=usage)  # type: ignore
         self._models = (
             models if models is not None else ["5P", "4P", "3PC", "3PH", "2P"]
         )
@@ -66,24 +68,38 @@ class BemaChangepointModeler(object):
     def _make_scorer(
         self, r2_threshold: float, cvrmse_threshold: float
     ) -> scoring.Scorer:
-        r2_scorer = scoring.ScoreEval(scoring.R2(), r2_threshold, lambda a, b: a > b)
+        # XXX I am type ignoring this for now since these test correctly,
+        # #but the scoring comparer in general needs a better API
+        r2_scorer = scoring.ScoreEval(scoring.R2(), r2_threshold, lambda a, b: a > b)  # type: ignore
         cvrmse_scorer = scoring.ScoreEval(
-            scoring.Cvrmse(), cvrmse_threshold, lambda a, b: a < b
+            scoring.Cvrmse(), cvrmse_threshold, lambda a, b: a < b  # type: ignore
         )
 
         return scoring.Scorer([r2_scorer, cvrmse_scorer])
 
-    def _fit(self, estimator: EnergyChangepointEstimator):
+    def _fit(
+        self,
+        estimator: EnergyChangepointEstimator[
+            ParamaterModelCallableT, EnergyParameterModelT
+        ],
+    ) -> None:
+        assert self._input_data.y is not None
         X, y, original_ordering = argsort_1d_idx(self._input_data.X, self._input_data.y)
         estimator.fit(X, y)
+        # XXX see https://github.com/cunybpl/changepointmodel/issues/67
         estimator._original_ordering = original_ordering
 
-    def _prep_nac(self, norms: List[float] = None) -> Optional[PredictedSumCalculator]:
+    def _prep_nac(
+        self, norms: Optional[List[float]] = None
+    ) -> Optional[PredictedSumCalculator]:
         if norms:
-            norms = [[i] for i in norms]
-            return PredictedSumCalculator(np.array(norms))
+            norms_ = [[i] for i in norms]
+            return PredictedSumCalculator(np.array(norms_))
+        return None
 
-    def run(self) -> BemaChangepointResultContainers:
+    def run(
+        self,
+    ) -> BemaChangepointResultContainers[Any, Any]:
         results = []
         for model in self._models:
             estimator, loads = config.get_changepoint_model_pair(model)
@@ -112,9 +128,7 @@ class BemaChangepointModeler(object):
             results.append(BemaChangepointResultContainer(estimator, result))
 
         if self._estimator_filter:
-            results = self._estimator_filter.filtered(
-                results
-            )  ## NOTE @tin we must assure this won't error
+            results = self._estimator_filter.filtered(results)
 
         return results
 
@@ -125,9 +139,9 @@ def _run_single_batch(
     models: List[str],
     r2_threshold: float,
     cvrmse_threshold: float,
-    norms: List[float],
-    model_filter: FilterConfig,
-) -> BemaChangepointResultContainers:
+    norms: Optional[List[float]],
+    model_filter: Optional[FilterConfig],
+) -> BemaChangepointResultContainers[Any, Any]:
     if model_filter:
         filt = ChangepointEstimatorFilter(
             which=model_filter.which, how=model_filter.how, extras=model_filter.extras
@@ -148,10 +162,10 @@ def _run_single_batch(
     return modeler.run()
 
 
-def _format_norms(norms: List[float]) -> nptypes.AnyByAnyNDArray:
-    norms = np.array(norms)
-    if norms.ndim == 1:  # assure 1d is reshaped according skl spec
-        return norms.reshape(-1, 1)
+def _format_norms(norms: List[float]) -> nptypes.AnyByAnyNDArray[np.float64]:
+    norms = np.array(norms)  # type: ignore
+    if norms.ndim == 1:  # type: ignore
+        return norms.reshape(-1, 1)  # type: ignore
     return np.atleast_2d(norms)
 
 
@@ -174,17 +188,19 @@ def run_optionc(req: SavingsRequest) -> SavingsResponse:
     pre_req = req.pre
     post_req = req.post
 
-    adjcalc = AshraeAdjustedSavingsCalculator(
-        confidence_interval=req.confidence_interval, scalar=req.scalar
-    )
-    print(req.norms)
+    if req.confidence_interval is None:
+        ci = 0.8
+    else:
+        ci = req.confidence_interval
+
+    adjcalc = AshraeAdjustedSavingsCalculator(confidence_interval=ci, scalar=req.scalar)
+
     normcalc = None
     if req.norms:
-        print("heyy")
         X_norms = _format_norms(req.norms)
         normcalc = AshraeNormalizedSavingsCalculator(
-            X_norms=X_norms,  # XXX <-- @tin this is what it should look like after https://github.com/cunybpl/changepointmodel/issues/36
-            confidence_interval=req.confidence_interval,
+            X_norms=X_norms,
+            confidence_interval=ci,
             scalar=req.scalar,
         )
 
@@ -200,7 +216,7 @@ def run_optionc(req: SavingsRequest) -> SavingsResponse:
         )
     except BemaChangepointException as err:
         e = BemaChangepointException(
-            info={"batch": "pre", **err.info}, message=err.message
+            info={"batch": "pre", **err.info}, message=err.message  # type: ignore
         )
         raise e from err
 
@@ -216,7 +232,7 @@ def run_optionc(req: SavingsRequest) -> SavingsResponse:
         )
     except BemaChangepointException as err:
         e = BemaChangepointException(
-            info={"batch": "post", **err.info}, message=err.message
+            info={"batch": "post", **err.info}, message=err.message  # type: ignore
         )
         raise e from err
 

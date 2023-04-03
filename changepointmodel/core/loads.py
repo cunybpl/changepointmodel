@@ -10,6 +10,7 @@ from .estimator import EnergyChangepointEstimator
 from .calc import loads as _loads
 
 from .pmodels import (
+    ParamaterModelCallableT,
     EnergyParameterModelT,
     EnergyParameterModelCoefficients,
     ParameterModelFunction,
@@ -307,7 +308,12 @@ class EnergyChangepointLoadsAggregator(Generic[EnergyParameterModelT]):
         """
         self._handler: AbstractLoadHandler[EnergyParameterModelT] = handler
 
-    def aggregate(self, estimator: EnergyChangepointEstimator) -> Load:
+    def aggregate(
+        self,
+        estimator: EnergyChangepointEstimator[
+            ParamaterModelCallableT, EnergyParameterModelT
+        ],
+    ) -> Load:
         """Performs some type checks between the handler and the estimator and then
         performs the load calculations using the configured handler.
 

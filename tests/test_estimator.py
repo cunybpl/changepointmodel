@@ -1,5 +1,5 @@
 from sklearn.exceptions import NotFittedError
-from changepointmodel.core.pmodels import ModelFunction
+from changepointmodel.core.pmodels import ModelFunction, ParameterModelFunction
 from changepointmodel.core.estimator import CurvefitEstimator
 import numpy as np
 

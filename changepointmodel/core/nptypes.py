@@ -17,7 +17,7 @@ NByOneNDArray = Annotated[npt.NDArray[Dtype], Literal["N", 1]]
 OneDimNDArray = Annotated[npt.NDArray[Dtype], Literal[1]]
 
 
-class AnyByAnyNDArrayField(np.ndarray):
+class AnyByAnyNDArrayField(np.ndarray):  # type: ignore
     @classmethod
     def __get_validators__(cls):  # type: ignore
         yield cls.validate
@@ -35,7 +35,7 @@ class AnyByAnyNDArrayField(np.ndarray):
         field_val.update(items={"type": "array", "items": {"type": "number"}})
 
 
-class NByOneNDArrayField(np.ndarray):
+class NByOneNDArrayField(np.ndarray):  # type: ignore
     @classmethod
     def __get_validators__(cls):  # type: ignore
         yield cls.validate
@@ -55,7 +55,7 @@ class NByOneNDArrayField(np.ndarray):
         field_val.update(items={"type": "array", "items": {"type": "number"}})
 
 
-class OneDimNDArrayField(np.ndarray):
+class OneDimNDArrayField(np.ndarray):  # type: ignore
     @classmethod
     def __get_validators__(cls):  # type: ignore
         yield cls.validate

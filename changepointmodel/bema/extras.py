@@ -8,11 +8,18 @@ They will filter out any models silently that do not conform to these conditions
 import numpy as np
 from typing import Iterator, List, Tuple
 from .base import BemaChangepointResultContainers, BemaChangepointResultContainer
+from changepointmodel.core.pmodels import ParamaterModelCallableT, EnergyParameterModelT
+
+import numpy.typing as npt
 
 
 def dpop(
-    results: BemaChangepointResultContainers,
-) -> Iterator[BemaChangepointResultContainer]:
+    results: BemaChangepointResultContainers[
+        ParamaterModelCallableT, EnergyParameterModelT
+    ],
+) -> Iterator[
+    BemaChangepointResultContainer[ParamaterModelCallableT, EnergyParameterModelT]
+]:
     """Checks if a models heating and cooling are within an established threshold that makes
     sense for building data.
 
@@ -24,10 +31,12 @@ def dpop(
     """
     for result in results:
         r = result.result
+
         if r.name == "2P":
             yield result
 
         elif r.name == "3PC":
+            assert r.coeffs.changepoints is not None
             len_x = len(r.input_data.X)
             threshold = len_x / 4
             coolnum = sum(
@@ -37,6 +46,7 @@ def dpop(
                 yield result
 
         elif r.name == "3PH":
+            assert r.coeffs.changepoints is not None
             len_x = len(r.input_data.X)
             threshold = len_x / 4
             heatnum = sum(r.input_data.X <= r.coeffs.changepoints[0])
@@ -44,6 +54,7 @@ def dpop(
                 yield result
 
         elif r.name == "4P":
+            assert r.coeffs.changepoints is not None
             len_x = len(r.input_data.X)
             threshold = len_x / 4
             heatnum = sum(r.input_data.X <= r.coeffs.changepoints[0])
@@ -52,6 +63,7 @@ def dpop(
                 yield result
 
         elif r.name == "5P":
+            assert r.coeffs.changepoints is not None
             len_x = len(r.input_data.X)
             threshold = len_x / 4
             heatnum = sum(r.input_data.X <= r.coeffs.changepoints[0])
@@ -67,8 +79,12 @@ def dpop(
 
 
 def shape(
-    results: BemaChangepointResultContainers,
-) -> Iterator[BemaChangepointResultContainer]:
+    results: BemaChangepointResultContainers[
+        ParamaterModelCallableT, EnergyParameterModelT
+    ],
+) -> Iterator[
+    BemaChangepointResultContainer[ParamaterModelCallableT, EnergyParameterModelT]
+]:
     """Checks that certain slopes of models conform to a shape expected from building energy data.
 
     Args:
@@ -95,16 +111,23 @@ def shape(
                     yield result
 
 
-def _std_error(x: np.ndarray, y: np.ndarray, y_pred: np.ndarray) -> float:
+def _std_error(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    y_pred: npt.NDArray[np.float64],
+) -> float:
     sse = np.sum((y - y_pred) ** 2)
     n = np.sqrt(sse / (len(y) - 2))
     d = np.sqrt(np.sum((x - np.mean(x)) ** 2))
-    return n / d
+    return n / d  # type: ignore
 
 
 def _get_array_right(
-    x: np.ndarray, y: np.ndarray, y_pred: np.ndarray, cp: float
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    y_pred: npt.NDArray[np.float64],
+    cp: float,
+) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     position = np.where(x >= cp)
     y_out = y[position]
     y_pred_out = y_pred[position]
@@ -113,8 +136,11 @@ def _get_array_right(
 
 
 def _get_array_left(
-    x: np.ndarray, y: np.ndarray, y_pred: np.ndarray, cp: float
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    y_pred: npt.NDArray[np.float64],
+    cp: float,
+) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     position = np.where(x <= cp)
     y_out = y[position]
     y_pred_out = y_pred[position]
@@ -123,8 +149,12 @@ def _get_array_left(
 
 
 def tstat(
-    results: BemaChangepointResultContainers,
-) -> Iterator[BemaChangepointResultContainer]:
+    results: BemaChangepointResultContainers[
+        ParamaterModelCallableT, EnergyParameterModelT
+    ],
+) -> Iterator[
+    BemaChangepointResultContainer[ParamaterModelCallableT, EnergyParameterModelT]
+]:
     """Determines if slopes are statistically significant relevant to one another.
 
     Args:
@@ -135,10 +165,12 @@ def tstat(
     """
     for result in results:
         r = result.result
+
         if r.name == "2P":
             yield result
 
         elif r.name == "3PC":
+            assert r.coeffs.changepoints is not None
             x, y, y_pred = _get_array_right(
                 np.array(r.input_data.X),
                 np.array(r.input_data.y),
@@ -152,6 +184,7 @@ def tstat(
                 yield result
 
         elif r.name == "3PH":
+            assert r.coeffs.changepoints is not None
             x, y, y_pred = _get_array_left(
                 np.array(r.input_data.X),
                 np.array(r.input_data.y),
@@ -165,6 +198,7 @@ def tstat(
                 yield result
 
         elif r.name == "4P":
+            assert r.coeffs.changepoints is not None
             xl, yl, y_predl = _get_array_left(
                 np.array(r.input_data.X),
                 np.array(r.input_data.y),
@@ -186,6 +220,7 @@ def tstat(
                 yield result
 
         elif r.name == "5P":
+            assert r.coeffs.changepoints is not None
             xl, yl, y_predl = _get_array_left(
                 np.array(r.input_data.X),
                 np.array(r.input_data.y),

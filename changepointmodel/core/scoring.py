@@ -8,6 +8,7 @@ from .nptypes import AnyByAnyNDArrayField, OneDimNDArray
 from typing import Any, Callable, List, TypeVar, Union
 from .calc import metrics
 from .estimator import EnergyChangepointEstimator
+from .pmodels import ParamaterModelCallableT, EnergyParameterModelT
 
 import numpy as np
 from typing import Dict, Any
@@ -32,7 +33,12 @@ class Score(object):
 
 class IEval(abc.ABC):
     @abc.abstractmethod
-    def ok(self, estimator: EnergyChangepointEstimator) -> Score:
+    def ok(
+        self,
+        estimator: EnergyChangepointEstimator[
+            ParamaterModelCallableT, EnergyParameterModelT
+        ],
+    ) -> Score:
         ...
 
 
@@ -118,7 +124,12 @@ class ScoreEval(IEval):
         self._threshold = threshold
         self._method = method
 
-    def ok(self, estimator: EnergyChangepointEstimator) -> Score:
+    def ok(
+        self,
+        estimator: EnergyChangepointEstimator[
+            ParamaterModelCallableT, EnergyParameterModelT
+        ],
+    ) -> Score:
         est_val = self._scorer(estimator.y, estimator.pred_y)
         return Score(
             self._scorer.name,
@@ -137,7 +148,12 @@ class Scorer(object):
         """
         self._evals = evals
 
-    def check(self, estimator: EnergyChangepointEstimator) -> List[Score]:
+    def check(
+        self,
+        estimator: EnergyChangepointEstimator[
+            ParamaterModelCallableT, EnergyParameterModelT
+        ],
+    ) -> List[Score]:
         """Given a changepoint estimator return a list of score evaluations against the result.
 
         Args:

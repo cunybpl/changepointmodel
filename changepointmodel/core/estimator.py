@@ -1,8 +1,12 @@
-from typing import Generator, List, Optional, Tuple, Callable, Any, Union, Dict
+from typing import Generator, List, Optional, Tuple, Callable, Any, Union, Dict, Generic
 import numpy as np
 
 from .nptypes import NByOneNDArray, OneDimNDArray, AnyByAnyNDArray
-from .pmodels import ModelFunction, ModelCallable
+from .pmodels import (
+    ParameterModelFunction,
+    ParamaterModelCallableT,
+    EnergyParameterModelT,
+)
 from .utils import argsort_1d_idx
 
 import numpy as np
@@ -36,7 +40,7 @@ Bounds = BoundTuple | OpenBoundCallable
 class CurvefitEstimator(BaseEstimator, RegressorMixin):  # type: ignore
     def __init__(
         self,
-        model_func: Optional[ModelCallable] = None,
+        model_func: Optional[Callable[..., Any]] = None,
         p0: Optional[List[float]] = None,
         bounds: Union[Bounds, OpenBoundCallable, None] = None,
         method: str = "trf",
@@ -121,13 +125,20 @@ class CurvefitEstimator(BaseEstimator, RegressorMixin):  # type: ignore
         return self.model_func(X, *self.popt_)  # type: ignore
 
 
-class EnergyChangepointEstimator(BaseEstimator, RegressorMixin):  # type: ignore
+class EnergyChangepointEstimator(BaseEstimator, RegressorMixin, Generic[ParamaterModelCallableT, EnergyParameterModelT]):  # type: ignore
     """A container object for a changepoint model. After a model is fit you can access scores and
     load calculations via propeties.
     """
 
-    def __init__(self, model: Optional[ModelFunction] = None):
-        self.model = model
+    def __init__(
+        self,
+        model: Optional[
+            ParameterModelFunction[ParamaterModelCallableT, EnergyParameterModelT]
+        ] = None,
+    ):
+        self.model: Optional[
+            ParameterModelFunction[ParamaterModelCallableT, EnergyParameterModelT]
+        ] = model
 
     @classmethod
     def sort_X_y(
@@ -139,7 +150,9 @@ class EnergyChangepointEstimator(BaseEstimator, RegressorMixin):  # type: ignore
     @classmethod
     def fit_many(
         cls,
-        models: List[ModelFunction],
+        models: List[
+            ParameterModelFunction[ParamaterModelCallableT, EnergyParameterModelT]
+        ],
         X: NByOneNDArray[np.float64],
         y: OneDimNDArray[np.float64],
         sigma: Optional[OneDimNDArray[np.float64]] = None,
@@ -147,7 +160,16 @@ class EnergyChangepointEstimator(BaseEstimator, RegressorMixin):  # type: ignore
         sort: bool = True,
         fail_silently: bool = True,
         **estimator_kwargs: Dict[str, Any],
-    ) -> Generator[Tuple[str, Optional["EnergyChangepointEstimator"]], None, None]:
+    ) -> Generator[
+        Tuple[
+            str,
+            Optional[
+                "EnergyChangepointEstimator[ParamaterModelCallableT, EnergyParameterModelT]"
+            ],
+        ],
+        None,
+        None,
+    ]:
         if sort:
             X, y = cls.sort_X_y(X, y)
 
@@ -164,7 +186,7 @@ class EnergyChangepointEstimator(BaseEstimator, RegressorMixin):  # type: ignore
     @classmethod
     def fit_one(
         cls,
-        model: ModelFunction,
+        model: ParameterModelFunction[ParamaterModelCallableT, EnergyParameterModelT],
         X: NByOneNDArray[np.float64],
         y: OneDimNDArray[np.float64],
         sigma: Optional[OneDimNDArray[np.float64]] = None,
@@ -172,7 +194,12 @@ class EnergyChangepointEstimator(BaseEstimator, RegressorMixin):  # type: ignore
         sort: bool = True,
         fail_silently: bool = True,
         **estimator_kwargs: Dict[str, Any],
-    ) -> Tuple[str, Optional["EnergyChangepointEstimator"]]:
+    ) -> Tuple[
+        str,
+        Optional[
+            "EnergyChangepointEstimator[ParamaterModelCallableT, EnergyParameterModelT]"
+        ],
+    ]:
         """Fits a single model. Will sort data if needed and optionally fail silently.
 
         Args:
@@ -202,7 +229,7 @@ class EnergyChangepointEstimator(BaseEstimator, RegressorMixin):  # type: ignore
         y: OneDimNDArray[np.float64],
         sigma: Optional[OneDimNDArray[np.float64]] = None,
         absolute_sigma: bool = False,
-    ) -> "EnergyChangepointEstimator":
+    ) -> "EnergyChangepointEstimator[ParamaterModelCallableT, EnergyParameterModelT]":
         """This is wrapper around CurvefitEstimator.fit and allows interoperability with sklearn
         NOTE: THIS METHOD DOES NOT SORT THE DATA! Input data should be sorted appropriately beforehand. You can
         use changepointmodel.core.utils.argsort_1d for standard changepoint model data.
@@ -221,9 +248,7 @@ class EnergyChangepointEstimator(BaseEstimator, RegressorMixin):  # type: ignore
             self.estimator_.X_,
             self.estimator_.y_,
         )
-        # print(self.X_)
-        # print(self.y_)
-        # print(self.pred_y_)
+
         self.sigma_ = sigma
         self.absolute_sigma_ = absolute_sigma
 
@@ -242,7 +267,10 @@ class EnergyChangepointEstimator(BaseEstimator, RegressorMixin):  # type: ignore
         check_is_fitted(self)
         return self.estimator_.predict(X)
 
-    def adjust(self, other: "EnergyChangepointEstimator") -> OneDimNDArray[np.float64]:
+    def adjust(
+        self,
+        other: "EnergyChangepointEstimator[ParamaterModelCallableT, EnergyParameterModelT]",
+    ) -> OneDimNDArray[np.float64]:
         """A convenience method that predicts using the X values of another EnergyChangepointEstimator.
         In option-c methodology this other would be the post retrofit model, making this calling instance the pre model.
 
