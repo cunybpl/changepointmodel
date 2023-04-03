@@ -14,7 +14,7 @@ class PredictedSum(object):
 
 
 class PredictedSumCalculator(object):
-    def __init__(self, X: NByOneNDArray):
+    def __init__(self, X: NByOneNDArray[np.float64]):
         """The array of X data you wish to predict and summarize given an estimator.
 
         Args:
@@ -31,4 +31,4 @@ class PredictedSumCalculator(object):
         Returns:
             PredictedSum: The sum of predictions
         """
-        return PredictedSum(value=np.sum(estimator.predict(self._X)))
+        return PredictedSum(value=np.sum(estimator.predict(self._X)))  # type: ignore

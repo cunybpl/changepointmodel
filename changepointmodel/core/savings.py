@@ -7,6 +7,9 @@ from .estimator import EnergyChangepointEstimator
 from .calc import savings as libsavings
 
 from .scoring import Cvrmse
+from typing import Optional
+
+import numpy.typing as npt
 
 _cvrmse_score = Cvrmse()
 
@@ -18,13 +21,13 @@ import abc
 
 def _get_adjusted(
     pre: EnergyChangepointEstimator, post: EnergyChangepointEstimator
-) -> OneDimNDArray:
+) -> OneDimNDArray[np.float64]:
     return pre.adjust(post)
 
 
 @dataclass
 class AdjustedSavingsResult(object):
-    adjusted_y: OneDimNDArrayField
+    adjusted_y: npt.NDArray[np.float64]
     total_savings: float
     average_savings: float
     percent_savings: float
@@ -33,8 +36,8 @@ class AdjustedSavingsResult(object):
 
 @dataclass
 class NormalizedSavingsResult(object):
-    normalized_y_pre: OneDimNDArrayField
-    normalized_y_post: OneDimNDArrayField
+    normalized_y_pre: npt.NDArray[np.float64]
+    normalized_y_post: npt.NDArray[np.float64]
     total_savings: float
     average_savings: float
     percent_savings: float
@@ -42,14 +45,25 @@ class NormalizedSavingsResult(object):
 
 
 class ISavingsCalculator(abc.ABC):
+    @abc.abstractmethod
     def save(
         self, pre: EnergyChangepointEstimator, post: EnergyChangepointEstimator
     ) -> AdjustedSavingsResult:
         ...
 
 
+class INormalizedCalculator(abc.ABC):
+    @abc.abstractmethod
+    def save(
+        self, pre: EnergyChangepointEstimator, post: EnergyChangepointEstimator
+    ) -> NormalizedSavingsResult:
+        ...
+
+
 class AbstractSavings(abc.ABC):
-    def __init__(self, confidence_interval: float = 0.80, scalar: float = None):
+    def __init__(
+        self, confidence_interval: float = 0.80, scalar: Optional[float] = None
+    ):
         """A Savings model calculates either adjusted or weather normalized savings
         based on ashrae formulas and methodology. Should be used in the context of option-c
         reporting with changepoint models.
@@ -65,7 +79,7 @@ class AbstractSavings(abc.ABC):
         self._scalar = 1 if scalar is None else scalar
 
     @property
-    def confidence_interval(self):
+    def confidence_interval(self) -> float:
         return self._confidence_interval
 
 
@@ -95,9 +109,9 @@ class AshraeAdjustedSavingsCalculator(AbstractSavings, ISavingsCalculator):
         post_n = post.len_y()
 
         savings = libsavings.adjusted(
-            gross_adjusted_y,
-            gross_post_y,
-            pre_cvrmse,
+            float(gross_adjusted_y),
+            float(gross_post_y),
+            float(pre_cvrmse),
             pre_p,
             pre_n,
             post_n,
@@ -123,12 +137,12 @@ class AshraeAdjustedSavingsCalculator(AbstractSavings, ISavingsCalculator):
 # This way we can pass configured objects to any factory method as opposed to passing data directly
 
 
-class AshraeNormalizedSavingsCalculator(AbstractSavings, ISavingsCalculator):
+class AshraeNormalizedSavingsCalculator(AbstractSavings, INormalizedCalculator):
     def __init__(
         self,
-        X_norms: NByOneNDArray,
+        X_norms: NByOneNDArray[np.float64],
         confidence_interval: float = 0.80,
-        scalar: float = None,
+        scalar: Optional[float] = None,
     ):
         """The Normalized savings calculations provide pre and post X arrays. These are used within the context
         of weather normalized savings for option-c retrofits.
@@ -141,7 +155,7 @@ class AshraeNormalizedSavingsCalculator(AbstractSavings, ISavingsCalculator):
         self._X_norms = X_norms
 
     @property
-    def X_norms(self):
+    def X_norms(self) -> NByOneNDArray[np.float64]:
         return self._X_norms
 
     def save(
@@ -161,6 +175,7 @@ class AshraeNormalizedSavingsCalculator(AbstractSavings, ISavingsCalculator):
 
         # setup
         normalized_pred_y_pre = pre.predict(self._X_norms) * self._scalar
+
         normalized_pred_y_post = post.predict(self._X_norms) * self._scalar
 
         gross_normalized_pred_y_pre = np.sum(normalized_pred_y_pre)
@@ -178,10 +193,10 @@ class AshraeNormalizedSavingsCalculator(AbstractSavings, ISavingsCalculator):
         n_norm = len(self._X_norms)
 
         savings = libsavings.weather_normalized(
-            gross_normalized_pred_y_pre,
-            gross_normalized_pred_y_post,
-            pre_cvrmse,
-            post_cvrmse,
+            float(gross_normalized_pred_y_pre),
+            float(gross_normalized_pred_y_post),
+            float(pre_cvrmse),
+            float(post_cvrmse),
             pre_n,
             post_n,
             pre_p,

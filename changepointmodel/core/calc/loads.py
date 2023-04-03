@@ -1,34 +1,36 @@
 """ Loads calculated from changepoint models. This is essentially AUC calculations.
 """
 
-from typing import Optional
 import numpy as np
 from ..nptypes import OneDimNDArray
 
-# just testing for lib
-# NOTE moved logic handling null up one level but might get rid of that completely
-
 
 # XXX possibly remove this... possibly use absolute value here .. tynabot do research...
-def _positive_sum(arr: OneDimNDArray) -> float:
-    return np.sum(arr * (arr > 0))
+def _positive_sum(arr: OneDimNDArray[np.float64]) -> float:
+    return np.sum((arr > 0) * arr)  # type: ignore
 
 
 def _heating_predicted_load(
-    X: OneDimNDArray, pred_y: OneDimNDArray, yint: float, changepoint: float = -np.inf
-):
+    X: OneDimNDArray[np.float64],
+    pred_y: OneDimNDArray[np.float64],
+    yint: float,
+    changepoint: float = -np.inf,
+) -> OneDimNDArray[np.float64]:
     return (X < changepoint) * (pred_y - yint)
 
 
 def _cooling_predicted_load(
-    X: OneDimNDArray, pred_y: OneDimNDArray, yint: float, changepoint: float = -np.inf
-):
+    X: OneDimNDArray[np.float64],
+    pred_y: OneDimNDArray[np.float64],
+    yint: float,
+    changepoint: float = -np.inf,
+) -> OneDimNDArray[np.float64]:
     return (X > changepoint) * (pred_y - yint)
 
 
 def heatload(
-    X: OneDimNDArray,
-    pred_y: OneDimNDArray,
+    X: OneDimNDArray[np.float64],
+    pred_y: OneDimNDArray[np.float64],
     yint: float,
     changepoint: float = np.inf,
 ) -> float:
@@ -48,7 +50,10 @@ def heatload(
 
 
 def coolingload(
-    X: OneDimNDArray, pred_y: OneDimNDArray, yint: float, changepoint: float = -np.inf
+    X: OneDimNDArray[np.float64],
+    pred_y: OneDimNDArray[np.float64],
+    yint: float,
+    changepoint: float = -np.inf,
 ) -> float:
     """The cooling load (auc) for both linear and changepoint models.
 

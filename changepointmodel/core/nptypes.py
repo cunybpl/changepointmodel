@@ -4,50 +4,44 @@ that are used for validating input and converting it from python primitives or a
 This can be treated as more or less a private module.     
 """
 import numpy as np
-from typing import Any, List, Union, Tuple, TypeAlias
-from nptyping import NDArray
+from typing import Union, Tuple, TypeVar, Annotated, Literal, Any
 
-AnyByAnyNDArray = NDArray[(Any, ...), float]
-NByOneNDArray = NDArray[
-    (
-        Any,
-        1,
-    ),
-    float,
-]  # [[1.], [2.], [3.], ...]
+import numpy.typing as npt
+
+# https://stackoverflow.com/questions/71109838/numpy-typing-with-specific-shape-and-datatype
 
 
-OneDimNDArray = NDArray[Tuple[Any], float]  # [ 1., 2., 3., ...]
-
-
-# pydantic aware numpy types.
+Dtype = TypeVar("Dtype", bound=np.generic)
+AnyByAnyNDArray = npt.NDArray[Dtype]
+NByOneNDArray = Annotated[npt.NDArray[Dtype], Literal["N", 1]]
+OneDimNDArray = Annotated[npt.NDArray[Dtype], Literal[1]]
 
 
 class AnyByAnyNDArrayField(np.ndarray):
     @classmethod
-    def __get_validators__(cls):
+    def __get_validators__(cls):  # type: ignore
         yield cls.validate
 
     @classmethod
-    def validate(cls, v):
+    def validate(cls, v: Any) -> AnyByAnyNDArray[np.float64]:
         arr = np.array(v, dtype=float)
         if len(arr.shape) != 2:
             raise ValueError("Shape of data should be M x n")
         return arr
 
     @classmethod
-    def __modify_schema__(cls, field_val):
+    def __modify_schema__(cls, field_val: Any) -> None:
         field_val.update(type="array")
         field_val.update(items={"type": "array", "items": {"type": "number"}})
 
 
 class NByOneNDArrayField(np.ndarray):
     @classmethod
-    def __get_validators__(cls):
+    def __get_validators__(cls):  # type: ignore
         yield cls.validate
 
     @classmethod
-    def validate(cls, v):
+    def validate(cls, v: Any) -> NByOneNDArray[np.float64]:
         arr = np.array(v, dtype=float)
         if len(arr.shape) != 2:
             raise ValueError("Shape of data should be M x n")
@@ -56,29 +50,29 @@ class NByOneNDArrayField(np.ndarray):
         return arr
 
     @classmethod
-    def __modify_schema__(cls, field_val):
+    def __modify_schema__(cls, field_val: Any) -> None:
         field_val.update(type="array")
         field_val.update(items={"type": "array", "items": {"type": "number"}})
 
 
 class OneDimNDArrayField(np.ndarray):
     @classmethod
-    def __get_validators__(cls):
+    def __get_validators__(cls):  # type: ignore
         yield cls.validate
 
     @classmethod
-    def validate(cls, v):
+    def validate(cls, v: Any) -> OneDimNDArray[np.float64]:
         arr = np.array(v, dtype=float)
         if len(arr.shape) != 1:
             raise ValueError("Shape of data should be One dimension")
         return arr
 
     @classmethod
-    def __modify_schema__(cls, field_val):
+    def __modify_schema__(cls, field_val: Any) -> None:
         field_val.update(type="array")
         field_val.update(items={"type": "number"})
 
 
 CpModelXArray = Union[OneDimNDArrayField, AnyByAnyNDArrayField]
-Ordering = List[int]
-ArgSortRetType = Tuple[AnyByAnyNDArrayField, OneDimNDArrayField, Ordering]
+Ordering = npt.NDArray[np.intp]
+ArgSortRetType = Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], Ordering]

@@ -2,11 +2,11 @@
 """
 import numpy as np
 from scipy import stats  # type: ignore
-from ..nptypes import OneDimNDArray
+from typing import Any
 
 
 def _get_tstat(confidence_interval: float, df: int) -> float:
-    return stats.t.interval(confidence_interval, df)[1]
+    return stats.t.interval(confidence_interval, df)[1]  # type: ignore
 
 
 def fractional_avoided_energy_use(
@@ -28,7 +28,7 @@ def fractional_avoided_energy_use(
 
 def relative_uncertainty_avoided_energy_use(
     confidence_interval: float, cvrmse: float, f: float, p: int, n_pre: int, n_post: int
-) -> float:
+) -> Any:
     """
      ASHARE Guideline 14 2014, Annex B
      Modified Eq. B-28
@@ -57,7 +57,7 @@ def relative_uncertainty_normalized_period(
     gross_norm: float,
     p: int,
     n_norm: int,
-) -> float:
+) -> Any:
     """
      ASHARE Guideline 14 2014, Annex B
      Modified Eq. B-28

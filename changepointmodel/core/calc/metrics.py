@@ -4,19 +4,16 @@ The scorer module forwards calls to these implementations.
 from typing import Union
 import numpy as np
 from sklearn import metrics as sklmetrics  # type: ignore
-
 from ..nptypes import OneDimNDArray
 
-# XXX use nptyping here.
-
-
-def _cvrmse_from_rmse(rmse: float, y: OneDimNDArray) -> float:
-    return rmse / np.mean(y)
+from typing import Dict, Any
 
 
 def r2_score(
-    y: OneDimNDArray, y_pred: OneDimNDArray, **kwargs
-) -> Union[float, OneDimNDArray[float]]:
+    y: OneDimNDArray[np.float64],
+    y_pred: OneDimNDArray[np.float64],
+    **kwargs: Dict[str, Any]
+) -> Union[float, OneDimNDArray[np.float64]]:
     """A wrapper around sklearn.metrics.r2_score. Returns the r2 score for predicted y values.
 
     Args:
@@ -26,12 +23,14 @@ def r2_score(
     Returns:
         Union[float, OneDimNDArray[float]]: The R2 scores or array of r2 scores if weigted.
     """
-    return sklmetrics.r2_score(y, y_pred, **kwargs)
+    return sklmetrics.r2_score(y, y_pred, **kwargs)  # type: ignore
 
 
 def rmse(
-    y: OneDimNDArray, y_pred: OneDimNDArray, **kwargs
-) -> Union[float, OneDimNDArray[float]]:
+    y: OneDimNDArray[np.float64],
+    y_pred: OneDimNDArray[np.float64],
+    **kwargs: Dict[str, Any]
+) -> Union[float, OneDimNDArray[np.float64]]:
     """The root mean square error using sklearn.metrics.mean_squared_error. We set squared=False
     according to the sklearn docs to get rmse.
 
@@ -42,12 +41,14 @@ def rmse(
     Returns:
         Union[float, OneDimNDArray[float]]: The RMSE or array of scores if weighted.
     """
-    return sklmetrics.mean_squared_error(y, y_pred, squared=False, **kwargs)
+    return sklmetrics.mean_squared_error(y, y_pred, squared=False, **kwargs)  # type: ignore
 
 
 def cvrmse(
-    y: OneDimNDArray, y_pred: OneDimNDArray, **kwargs
-) -> Union[float, OneDimNDArray[float]]:
+    y: OneDimNDArray[np.float64],
+    y_pred: OneDimNDArray[np.float64],
+    **kwargs: Dict[str, Any]
+) -> Union[float, OneDimNDArray[np.float64]]:
     """Calculates the cvrmse from rmse.
 
     Args:
@@ -57,5 +58,5 @@ def cvrmse(
     Returns:
         Union[float, OneDimNDArray[float]]: The CVRMSE or array of scores if weighted.
     """
-    rmse = sklmetrics.mean_squared_error(y, y_pred, squared=False, **kwargs)
-    return _cvrmse_from_rmse(rmse, y)
+    rmse = sklmetrics.mean_squared_error(y, y_pred, squared=False, **kwargs)  # type: ignore
+    return rmse / np.mean(y)  # type: ignore

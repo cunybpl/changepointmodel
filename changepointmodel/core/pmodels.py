@@ -2,10 +2,10 @@
 """
 
 import abc
-from dataclasses import dataclass
-from typing import List, Optional, Tuple, Union, TypeVar
+import dataclasses
+from typing import List, Tuple, Union, TypeVar, Generic
 from .nptypes import NByOneNDArray, OneDimNDArray
-
+import numpy as np
 
 from typing_extensions import Protocol
 
@@ -14,20 +14,24 @@ Bound = Tuple[Tuple[float, ...], Tuple[float, ...]]
 
 # defines two callables
 class ModelCallable(Protocol):
-    def __call__(self, X: NByOneNDArray, *args: float) -> OneDimNDArray:
+    def __call__(
+        self, X: NByOneNDArray[np.float64], *args: float
+    ) -> OneDimNDArray[np.float64]:
         ...
 
 
 class BoundCallable(Protocol):
-    def __call__(self, X: Union[OneDimNDArray, NByOneNDArray]) -> Bound:
+    def __call__(
+        self, X: Union[OneDimNDArray[np.float64], NByOneNDArray[np.float64]]
+    ) -> Bound:
         ...
 
 
-@dataclass
+@dataclasses.dataclass
 class EnergyParameterModelCoefficients(object):
     yint: float
     slopes: List[float]
-    changepoints: List[float] = []
+    changepoints: List[float]
 
 
 class ICoefficientParser(object):
@@ -161,11 +165,17 @@ class FiveParameterCoefficientsParser(ICoefficientParser):
         return EnergyParameterModelCoefficients(yint, [ls, rs], [lcp, rcp])
 
 
-EnergyParameterModel = Union[
-    TwoParameterModel, ThreeParameterModel, FourParameterModel, FiveParameterModel
-]
+# EnergyParameterModel = Union[
+#     TwoParameterModel, ThreeParameterModel, FourParameterModel, FiveParameterModel
+# ]
 
-EnergyParameterModelT = TypeVar("EnergyParameterModelT")
+EnergyParameterModelT = TypeVar(
+    "EnergyParameterModelT",
+    TwoParameterModel,
+    ThreeParameterModel,
+    FourParameterModel,
+    FiveParameterModel,
+)
 
 
 class ModelFunction(object):
@@ -189,13 +199,13 @@ class ModelFunction(object):
         return self._bounds
 
 
-class ParameterModelFunction(ModelFunction):
+class ParameterModelFunction(ModelFunction, Generic[EnergyParameterModelT]):
     def __init__(
         self,
         name: str,
         f: ModelCallable,
         bounds: Union[BoundCallable, Bound],
-        parameter_model: EnergyParameterModel,
+        parameter_model: EnergyParameterModelT,
         coefficients_parser: ICoefficientParser,
     ):
         """A Parameter model function for our changepoint modeling is composed
@@ -212,11 +222,11 @@ class ParameterModelFunction(ModelFunction):
         """
 
         super().__init__(name, f, bounds)
-        self._parameter_model = parameter_model
+        self._parameter_model: EnergyParameterModelT = parameter_model
         self._coefficients_parser = coefficients_parser
 
     @property
-    def parameter_model(self) -> EnergyParameterModel:
+    def parameter_model(self) -> EnergyParameterModelT:
         return self._parameter_model
 
     def parse_coeffs(

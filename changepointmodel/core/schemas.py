@@ -21,19 +21,14 @@ class CurvefitEstimatorDataModel(pydantic.BaseModel):
     absolute_sigma: Optional[bool] = None
 
     @pydantic.validator("X")
-    def validate_X(
-        cls, v: AnyByAnyNDArray
-    ) -> (
-        AnyByAnyNDArray
-    ):  # we don't want to overdo this check... but a basic reshape here is extremely helpful for processing
+    def validate_X(cls, v: AnyByAnyNDArray[np.float64]) -> AnyByAnyNDArray[np.float64]:
         if v.ndim == 1:  # assure 1d is reshaped according skl spec
             return v.reshape(-1, 1)
-        return np.atleast_2d(
-            v
-        )  # assure that anything else is at least 2d .. NOTE will not check for nested data... just know what your doing...
+        # assure that anything else is at least 2d .. NOTE will not check for nested data... just know what your doing...
+        return np.atleast_2d(v)
 
     @pydantic.root_validator
-    def validate(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_all(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if values["y"] is None and values["sigma"] is not None:
             raise ValueError("Cannot pass `sigma` without `y`")
 

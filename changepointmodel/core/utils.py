@@ -1,4 +1,8 @@
-from .pmodels import EnergyParameterModelCoefficients, ParameterModelFunction
+from .pmodels import (
+    ParameterModelFunction,
+    EnergyParameterModelT,
+    EnergyParameterModelCoefficients,
+)
 from typing import Tuple, List
 import numpy as np
 from .nptypes import (
@@ -35,13 +39,13 @@ def unargsort_1d_idx(
     Returns:
         nptypes.OneDimNDArrayField: _description_
     """
-    out = arr.flatten()  # this would flatten X (oat)
+    out = arr.flatten()
     unsort_index = np.argsort(original_order)
-    return out[unsort_index]
+    return out[unsort_index]  # type: ignore
 
 
 def parse_coeffs(
-    model: ParameterModelFunction, coeffs: Tuple[float, ...]
+    model: ParameterModelFunction[EnergyParameterModelT], coeffs: Tuple[float, ...]
 ) -> EnergyParameterModelCoefficients:
     """Given an ParameterModelFunction and raw coefficients tuple from CurvefitEstimator.fit
     will return an EnerguParameterModelCoefficients accessor object.

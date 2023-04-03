@@ -11,10 +11,12 @@ in even higher order functions or classes on in application (i.e. an RPC service
 
 
 from .estimator import EnergyChangepointEstimator
-from typing import Union
+from typing import Union, Generic
 from . import loads
 from dataclasses import dataclass
 from . import pmodels as pmodels
+
+from .pmodels import EnergyParameterModelT
 
 
 class EnergyModelConfigurationError(TypeError):
@@ -22,13 +24,13 @@ class EnergyModelConfigurationError(TypeError):
 
 
 @dataclass
-class EnergyModel(object):
+class EnergyModel(Generic[EnergyParameterModelT]):
     """The purpose of this container object is to keep the correct ParameterModelFunction
     and LoadHandler in the same place.
     """
 
-    model: pmodels.ParameterModelFunction
-    load_handler: loads.AbstractLoadHandler
+    model: pmodels.ParameterModelFunction[EnergyParameterModelT]
+    load_handler: loads.AbstractLoadHandler[EnergyParameterModelT]
 
     def create_estimator(self) -> EnergyChangepointEstimator:
         """Spawn a new estimator from the model.
@@ -38,7 +40,9 @@ class EnergyModel(object):
         """
         return EnergyChangepointEstimator(model=self.model)
 
-    def create_load_aggregator(self) -> loads.EnergyChangepointLoadsAggregator:
+    def create_load_aggregator(
+        self,
+    ) -> loads.EnergyChangepointLoadsAggregator[EnergyParameterModelT]:
         """Convenience method to get a reference to this model's load.
 
         XXX I added this to create a public API since this part of the object might change.
@@ -49,7 +53,7 @@ class EnergyModel(object):
         return loads.EnergyChangepointLoadsAggregator(handler=self.load_handler)
 
 
-class EnergyModelFactory(object):
+class EnergyModelFactory(Generic[EnergyParameterModelT]):
     @classmethod
     def create(
         cls,
@@ -57,9 +61,9 @@ class EnergyModelFactory(object):
         f: pmodels.ModelCallable,
         b: Union[pmodels.BoundCallable, pmodels.Bound],
         parser: pmodels.ICoefficientParser,
-        parameter_model: pmodels.EnergyParameterModel,
-        load_handler: loads.AbstractLoadHandler,
-    ) -> EnergyModel:
+        parameter_model: EnergyParameterModelT,
+        load_handler: loads.AbstractLoadHandler[EnergyParameterModelT],
+    ) -> EnergyModel[EnergyParameterModelT]:
         """Construct an model and a loads factory simultaneously.
         Creates a convenient container object which will help keep model dependent
         calculations together within more complicated workflows.
@@ -78,8 +82,6 @@ class EnergyModelFactory(object):
         Returns:
             EnergyModel: [description]
         """
-        # XXX maybe should try to figure out a way to make sure this config is valid.
-        # These internals to construct ParameterModelFunction simply are not aware of each other at the moment so it is difficult.
 
         model = pmodels.ParameterModelFunction(name, f, b, parameter_model, parser)
 

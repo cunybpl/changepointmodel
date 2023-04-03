@@ -5,23 +5,24 @@ Tuple return types correspond directly to coeffs in the method signature.Details
 tuples can be read in the docs for `scipy.optimize.curve_fit`.
 """
 
-from typing import Tuple, Union
+from typing import Tuple, Union, Callable
 import numpy as np
 from ..nptypes import OneDimNDArray, NByOneNDArray
 
 BoundTuple = Tuple[Tuple[float, ...], Tuple[float, ...]]
-
 TwoParameterBoundary = Tuple[float, float]
 ThreeParameterBoundary = Tuple[float, float, float]
 FourParameterBoundary = Tuple[float, float, float, float]
 FiveParameterBoundary = Tuple[float, float, float, float, float]
 
+OpenBoundCallable = Callable[
+    [Union[OneDimNDArray[np.float64], NByOneNDArray[np.float64]]], BoundTuple
+]
+
 
 def twop(
-    *args, **kwargs
-) -> Tuple[
-    TwoParameterBoundary, TwoParameterBoundary
-]:  # << XXX need this to satisfy the interface even though we pass a constant
+    _: Union[OneDimNDArray[np.float64], NByOneNDArray[np.float64]]
+) -> Tuple[TwoParameterBoundary, TwoParameterBoundary]:
     """Energy bound for a twop (linear) model. Essentially returns a constant but we need this to
     conform to the Bounds interface.
 
@@ -32,7 +33,7 @@ def twop(
 
 
 def threepc(
-    X: Union[OneDimNDArray, NByOneNDArray]
+    X: Union[OneDimNDArray[np.float64], NByOneNDArray[np.float64]]
 ) -> Tuple[ThreeParameterBoundary, ThreeParameterBoundary]:
     """A threepc boundary for energy data.
 
@@ -49,7 +50,7 @@ def threepc(
 
 
 def threeph(
-    X: Union[OneDimNDArray, NByOneNDArray]
+    X: Union[OneDimNDArray[np.float64], NByOneNDArray[np.float64]]
 ) -> Tuple[ThreeParameterBoundary, ThreeParameterBoundary]:
     """A threeph boundary for energy data.
 
@@ -66,7 +67,7 @@ def threeph(
 
 
 def fourp(
-    X: Union[OneDimNDArray, NByOneNDArray]
+    X: Union[OneDimNDArray[np.float64], NByOneNDArray[np.float64]]
 ) -> Tuple[FourParameterBoundary, FourParameterBoundary]:
     """A fourp boundary for energy data
 
@@ -83,7 +84,7 @@ def fourp(
 
 
 def fivep(
-    X: Union[OneDimNDArray, NByOneNDArray]
+    X: Union[OneDimNDArray[np.float64], NByOneNDArray[np.float64]]
 ) -> Tuple[FiveParameterBoundary, FiveParameterBoundary]:
     """A fivep boundary for energy data.
 

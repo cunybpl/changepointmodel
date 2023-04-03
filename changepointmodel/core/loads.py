@@ -2,18 +2,21 @@
 """
 import abc
 import numpy as np
-from .nptypes import NByOneNDArray, OneDimNDArray
+from .nptypes import OneDimNDArray
 from . import utils
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Generic
 from .estimator import EnergyChangepointEstimator
 
 from .calc import loads as _loads
 
 from .pmodels import (
-    EnergyParameterModel,
     EnergyParameterModelT,
     EnergyParameterModelCoefficients,
     ParameterModelFunction,
+    TwoParameterModel,
+    ThreeParameterModel,
+    FourParameterModel,
+    FiveParameterModel,
 )
 from dataclasses import dataclass
 
@@ -32,16 +35,23 @@ class ISensitivityLoad(abc.ABC):
     @abc.abstractmethod
     def calc(
         self,
-        X: OneDimNDArray,
-        pred_y: OneDimNDArray,
+        X: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
         slope: float,
         yint: float,
         changepoint: Optional[float] = None,
     ) -> float:
         ...
 
-    def __call__(self, *args, **kwargs) -> float:
-        return self.calc(*args, **kwargs)
+    def __call__(
+        self,
+        X: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
+        slope: float,
+        yint: float,
+        changepoint: Optional[float] = None,
+    ) -> float:
+        return self.calc(X, pred_y, slope, yint, changepoint)
 
 
 class IBaseload(abc.ABC):
@@ -49,15 +59,15 @@ class IBaseload(abc.ABC):
     def calc(self, total_consumption: float, *loads: float) -> float:
         ...
 
-    def __call__(self, *args, **kwargs) -> float:
-        return self.calc(*args, **kwargs)
+    def __call__(self, total_consumption: float, *loads: float) -> float:
+        return self.calc(total_consumption, *loads)
 
 
 class HeatingLoad(ISensitivityLoad):
     def calc(
         self,
-        X: OneDimNDArray,
-        pred_y: OneDimNDArray,
+        X: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
         slope: float,
         yint: float,
         changepoint: Optional[float] = None,
@@ -88,8 +98,8 @@ class HeatingLoad(ISensitivityLoad):
 class CoolingLoad(ISensitivityLoad):
     def calc(
         self,
-        X: OneDimNDArray,
-        pred_y: OneDimNDArray,
+        X: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
         slope: float,
         yint: float,
         changepoint: Optional[float] = None,
@@ -130,7 +140,7 @@ class Baseload(IBaseload):
         )  # This just subtracts all loads from this total y_pred ... subject to change @tynabot
 
 
-class AbstractLoadHandler(abc.ABC):
+class AbstractLoadHandler(abc.ABC, Generic[EnergyParameterModelT]):
     def __init__(
         self,
         model: EnergyParameterModelT,
@@ -138,27 +148,20 @@ class AbstractLoadHandler(abc.ABC):
         heating: ISensitivityLoad,
         base: Optional[IBaseload] = None,
     ):
-        """The handler for calculating heating cooling and baseloads for a given model.
-
-        Args:
-            model (EnergyParameterModel): An instance of an EnergyParameterModel
-            cooling (ISensitivityLoad): A cooling load calculation.
-            heating (ISensitivityLoad): A heating load calculation.
-            base (Optional[IBaseload], optional): A baseload calculation. Defaults to None.
-        """
-
-        self._model = model
+        self._model: EnergyParameterModelT = model
         self._cooling = cooling
         self._heating = heating
         self._base = base if base is not None else Baseload()
 
     @property
-    def model(self):
+    def model(self) -> EnergyParameterModelT:
         return self._model  # for introspection later.
 
     def _initial(
-        self, pred_y: OneDimNDArray, coeffs: EnergyParameterModelCoefficients
-    ) -> Tuple[float, float]:
+        self,
+        pred_y: OneDimNDArray[np.float64],
+        coeffs: EnergyParameterModelCoefficients,
+    ) -> Tuple[float, np.float64]:
         yint = self._model.yint(coeffs)  # all models need this so placing here...
         total_pred_y = np.sum(pred_y)
         return yint, total_pred_y
@@ -166,18 +169,18 @@ class AbstractLoadHandler(abc.ABC):
     @abc.abstractmethod
     def run(
         self,
-        X: OneDimNDArray,
-        pred_y: OneDimNDArray,
+        X: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
         coeffs: EnergyParameterModelCoefficients,
     ) -> Load:
         ...
 
 
-class TwoParameterLoadHandler(AbstractLoadHandler):
+class TwoParameterLoadHandler(AbstractLoadHandler[TwoParameterModel]):
     def run(
         self,
-        X: OneDimNDArray,
-        pred_y: OneDimNDArray,
+        X: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
         coeffs: EnergyParameterModelCoefficients,
     ) -> Load:
         """Calculate a two parameter load.
@@ -195,16 +198,16 @@ class TwoParameterLoadHandler(AbstractLoadHandler):
         slope = self._model.slope(coeffs)
         heating = self._heating(X, pred_y, slope, yint)
         cooling = self._cooling(X, pred_y, slope, yint)
-        base = self._base(total_pred_y, cooling, heating)
+        base = self._base(float(total_pred_y), cooling, heating)
 
         return Load(base=base, heating=heating, cooling=cooling)
 
 
-class ThreeParameterLoadHandler(AbstractLoadHandler):
+class ThreeParameterLoadHandler(AbstractLoadHandler[ThreeParameterModel]):
     def run(
         self,
-        X: OneDimNDArray,
-        pred_y: OneDimNDArray,
+        X: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
         coeffs: EnergyParameterModelCoefficients,
     ) -> Load:
         """Calculate a three parameter (heating or cooling) load.
@@ -225,16 +228,16 @@ class ThreeParameterLoadHandler(AbstractLoadHandler):
 
         heating = self._heating(X, pred_y, slope, yint, cp)
         cooling = self._cooling(X, pred_y, slope, yint, cp)
-        base = self._base(total_pred_y, cooling, heating)
+        base = self._base(float(total_pred_y), cooling, heating)
 
         return Load(base, heating, cooling)
 
 
-class FourParameterLoadHandler(AbstractLoadHandler):
+class FourParameterLoadHandler(AbstractLoadHandler[FourParameterModel]):
     def run(
         self,
-        X: OneDimNDArray,
-        pred_y: OneDimNDArray,
+        X: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
         coeffs: EnergyParameterModelCoefficients,
     ) -> Load:
         """Calculate a FourParameterLoad.
@@ -256,16 +259,16 @@ class FourParameterLoadHandler(AbstractLoadHandler):
 
         heating = self._heating(X, pred_y, ls, yint, cp)
         cooling = self._cooling(X, pred_y, rs, yint, cp)
-        base = self._base(total_pred_y, cooling, heating)
+        base = self._base(float(total_pred_y), cooling, heating)
 
         return Load(base, heating, cooling)
 
 
-class FiveParameterLoadHandler(AbstractLoadHandler):
+class FiveParameterLoadHandler(AbstractLoadHandler[FiveParameterModel]):
     def run(
         self,
-        X: NByOneNDArray,
-        pred_y: OneDimNDArray,
+        X: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
         coeffs: EnergyParameterModelCoefficients,
     ) -> Load:
         """Calculate a FiveParameterLoad
@@ -289,20 +292,20 @@ class FiveParameterLoadHandler(AbstractLoadHandler):
 
         cooling = self._cooling(X, pred_y, rs, yint, rcp)
         heating = self._heating(X, pred_y, ls, yint, lcp)
-        base = self._base(total_pred_y, cooling, heating)
+        base = self._base(float(total_pred_y), cooling, heating)
 
         return Load(base, heating, cooling)
 
 
-class EnergyChangepointLoadsAggregator(object):
-    def __init__(self, handler: AbstractLoadHandler):
+class EnergyChangepointLoadsAggregator(Generic[EnergyParameterModelT]):
+    def __init__(self, handler: AbstractLoadHandler[EnergyParameterModelT]):
         """A high level wrapper around a load handler that works with an
         estimator to aggregate the load.
 
         Args:
             handler (AbstractLoadHandler): An instance of a load handler.
         """
-        self._handler = handler
+        self._handler: AbstractLoadHandler[EnergyParameterModelT] = handler
 
     def aggregate(self, estimator: EnergyChangepointEstimator) -> Load:
         """Performs some type checks between the handler and the estimator and then
@@ -324,7 +327,7 @@ class EnergyChangepointLoadsAggregator(object):
         if not isinstance(
             estimator.model, ParameterModelFunction
         ):  # XXX is there a way around this introspection?
-            raise TypeError(f"estimator.model must be of type ParameterModelFunction")
+            raise TypeError("estimator.model must be of type ParameterModelFunction")
 
         if not isinstance(
             estimator.model.parameter_model, self._handler.model.__class__

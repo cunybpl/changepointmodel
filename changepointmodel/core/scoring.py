@@ -9,18 +9,17 @@ from typing import Any, Callable, List, TypeVar, Union
 from .calc import metrics
 from .estimator import EnergyChangepointEstimator
 
+import numpy as np
+from typing import Dict, Any
 
-class IComparable(
-    abc.ABC
-):  # trick to declare a Comparable type... py3 all comparability is implemented in terms of < so this is a safe descriptor
+
+SklScoreReturnType = Union[float, OneDimNDArray[np.float64]]
+
+
+class ISklComparable(abc.ABC):
     @abc.abstractmethod
-    def __lt__(self, other: Any) -> bool:
+    def __call__(self, result: SklScoreReturnType, threshold: float) -> bool:
         ...
-
-
-ComparableType = TypeVar("ComparableType", bound=IComparable)
-SklScoreReturnType = Union[float, AnyByAnyNDArrayField, Any]
-Comparator = Callable[[IComparable, IComparable], bool]
 
 
 @dataclass
@@ -33,7 +32,7 @@ class Score(object):
 
 class IEval(abc.ABC):
     @abc.abstractmethod
-    def ok(self, estimator: EnergyChangepointEstimator) -> bool:
+    def ok(self, estimator: EnergyChangepointEstimator) -> Score:
         ...
 
 
@@ -54,37 +53,59 @@ class ScoringFunction(abc.ABC):
 
     @abc.abstractmethod
     def calc(
-        self, y: OneDimNDArray, y_pred: OneDimNDArray, **kwargs
+        self,
+        y: OneDimNDArray[np.float64],
+        y_pred: OneDimNDArray[np.float64],
+        **kwargs: Dict[str, Any]
     ) -> SklScoreReturnType:
         ...
 
-    def __call__(self, *args, **kwargs):
-        return self.calc(*args, **kwargs)
+    def __call__(
+        self,
+        y: OneDimNDArray[np.float64],
+        y_pred: OneDimNDArray[np.float64],
+        **kwargs: Dict[str, Any]
+    ) -> SklScoreReturnType:
+        return self.calc(y, y_pred, **kwargs)
 
 
 class R2(ScoringFunction):
     def calc(
-        self, y: OneDimNDArray, pred_y: OneDimNDArray, **kwargs
+        self,
+        y: OneDimNDArray[np.float64],
+        y_pred: OneDimNDArray[np.float64],
+        **kwargs: Dict[str, Any]
     ) -> SklScoreReturnType:
-        return metrics.r2_score(y, pred_y, **kwargs)
+        return metrics.r2_score(y, y_pred, **kwargs)
 
 
 class Rmse(ScoringFunction):
     def calc(
-        self, y: OneDimNDArray, pred_y: OneDimNDArray, **kwargs
+        self,
+        y: OneDimNDArray[np.float64],
+        y_pred: OneDimNDArray[np.float64],
+        **kwargs: Dict[str, Any]
     ) -> SklScoreReturnType:
-        return metrics.rmse(y, pred_y, **kwargs)
+        return metrics.rmse(y, y_pred, **kwargs)
 
 
 class Cvrmse(ScoringFunction):
     def calc(
-        self, y: OneDimNDArray, pred_y: OneDimNDArray, **kwargs
+        self,
+        y: OneDimNDArray[np.float64],
+        y_pred: OneDimNDArray[np.float64],
+        **kwargs: Dict[str, Any]
     ) -> SklScoreReturnType:
-        return metrics.cvrmse(y, pred_y, **kwargs)
+        return metrics.cvrmse(y, y_pred, **kwargs)
 
 
 class ScoreEval(IEval):
-    def __init__(self, scorer: ScoringFunction, threshold: float, method: Comparator):
+    def __init__(
+        self,
+        scorer: ScoringFunction,
+        threshold: float,
+        method: ISklComparable,
+    ):
         """Evaluates a single score using the scoring function and reports whether the Score meets the
         threshold.
 
