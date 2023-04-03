@@ -16,14 +16,14 @@ import numpy as np
 
 
 def test_yinterceptmixin():
-    coeffs = EnergyParameterModelCoefficients(42, [99], None)
+    coeffs = EnergyParameterModelCoefficients(42, [99], [])
 
     model = YinterceptMixin()
     assert model.yint(coeffs) == 42
 
 
 def test_twoparametermodel():
-    coeffs = EnergyParameterModelCoefficients(42, [99], None)
+    coeffs = EnergyParameterModelCoefficients(42, [99], [])
 
     model = TwoParameterModel()
     assert model.slope(coeffs) == 99
@@ -54,7 +54,7 @@ def test_fiveparametermodel():
 
 
 def test_linear_coefficient_parser():
-    test = EnergyParameterModelCoefficients(42, [99], None)
+    test = EnergyParameterModelCoefficients(42, [99], [])
     parser = TwoParameterCoefficientParser()
     assert parser.parse((42, 99)) == test
 
@@ -99,5 +99,5 @@ def test_modelfunction():
     assert model.parameter_model == parmeter_model
 
     assert model.parse_coeffs((42, 99)) == EnergyParameterModelCoefficients(
-        42, [99], None
+        42, [99], []
     )

@@ -35,7 +35,8 @@ def test_cvrmse_score_forwards_arguments(mocker):
     mock.assert_called_once_with(y, y_pred, sample_weight=sample_weight, squared=False)
 
 
-def test_cvrmse_from_rmse():
-    rmse = 2
-    y = np.array([1.0, 2.0, 3.0])
-    assert 1 == energymodelmetrics._cvrmse_from_rmse(rmse, y)
+# XXX removed this private method ...
+# def test_cvrmse_from_rmse():
+#     rmse = 2
+#     y = np.array([1.0, 2.0, 3.0])
+#     assert 1 == energymodelmetrics._cvrmse_from_rmse(rmse, y)

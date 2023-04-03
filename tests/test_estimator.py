@@ -47,13 +47,14 @@ def test_energychangepointestimator_properties_set_on_fit():
     est.fit(X, y)
 
     assert est.name == "line"
+
     assert_array_equal(X, est.X)
     assert_array_equal(y, est.y)
     assert_almost_equal((0, 1), est.coeffs, decimal=1)
     assert_array_almost_equal(est.pred_y, y, decimal=1)
     assert est.sigma is None
     assert est.cov.all()
-    assert est.absolute_sigma is None
+    assert est.absolute_sigma is False
 
 
 def test_estimator_calculated_getter_methods():

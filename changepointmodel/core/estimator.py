@@ -16,11 +16,9 @@ from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.exceptions import NotFittedError  # type: ignore
 
 from .calc.bounds import BoundTuple, OpenBoundCallable
-import functools
 
 
 def check_not_fitted(method: Callable[..., Any]) -> Callable[..., Any]:
-    @functools.wraps
     def inner(*args: Tuple[Any, ...], **kwargs: Dict[str, Any]) -> Any:
         try:
             return method(*args, **kwargs)
@@ -218,10 +216,14 @@ class EnergyChangepointEstimator(BaseEstimator, RegressorMixin):  # type: ignore
             model_func=self.model.f, bounds=self.model.bounds  # type: ignore
         )
         self.pred_y_ = self.estimator_.fit(X, y, sigma, absolute_sigma).predict(X)
+
         self.X_, self.y_ = (
             self.estimator_.X_,
             self.estimator_.y_,
         )
+        # print(self.X_)
+        # print(self.y_)
+        # print(self.pred_y_)
         self.sigma_ = sigma
         self.absolute_sigma_ = absolute_sigma
 

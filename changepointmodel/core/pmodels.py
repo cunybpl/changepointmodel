@@ -31,7 +31,7 @@ class BoundCallable(Protocol):
 class EnergyParameterModelCoefficients(object):
     yint: float
     slopes: List[float]
-    changepoints: List[float]
+    changepoints: List[float] = dataclasses.field(default_factory=lambda: [])
 
 
 class ICoefficientParser(object):

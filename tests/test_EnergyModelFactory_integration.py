@@ -46,7 +46,7 @@ def test_energymodelfactory_integration_with_2p(generated_2p_data):
 
     # coeffs
     assert result["coeffs"].yint != 0.0
-    assert result["coeffs"].changepoints == None
+    assert result["coeffs"].changepoints == []
     assert len(result["coeffs"].slopes) == 1
 
     # loads
