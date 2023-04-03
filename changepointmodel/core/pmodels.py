@@ -3,7 +3,7 @@
 
 import abc
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, TypeVar
 from .nptypes import NByOneNDArray, OneDimNDArray
 
 
@@ -27,7 +27,7 @@ class BoundCallable(Protocol):
 class EnergyParameterModelCoefficients(object):
     yint: float
     slopes: List[float]
-    changepoints: Optional[List[float]]
+    changepoints: List[float] = []
 
 
 class ICoefficientParser(object):
@@ -140,7 +140,7 @@ class FiveParameterModel(IDualSlopeDualChangepointModel):
 class TwoParameterCoefficientParser(ICoefficientParser):
     def parse(self, coeffs: Tuple[float, ...]) -> EnergyParameterModelCoefficients:
         yint, slope = coeffs
-        return EnergyParameterModelCoefficients(yint, [slope], None)
+        return EnergyParameterModelCoefficients(yint, [slope], [])
 
 
 class ThreeParameterCoefficientsParser(ICoefficientParser):
@@ -164,6 +164,8 @@ class FiveParameterCoefficientsParser(ICoefficientParser):
 EnergyParameterModel = Union[
     TwoParameterModel, ThreeParameterModel, FourParameterModel, FiveParameterModel
 ]
+
+EnergyParameterModelT = TypeVar("EnergyParameterModelT")
 
 
 class ModelFunction(object):

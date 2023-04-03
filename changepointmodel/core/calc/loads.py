@@ -30,7 +30,7 @@ def heatload(
     X: OneDimNDArray,
     pred_y: OneDimNDArray,
     yint: float,
-    changepoint: Optional[float] = np.inf,
+    changepoint: float = np.inf,
 ) -> float:
     """Calculate the heatload (auc) for both linear and changepoint models.
 

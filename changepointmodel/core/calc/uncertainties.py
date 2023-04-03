@@ -1,7 +1,7 @@
 """ ashrae formulas for option-c methodologies involving energy usage.
 """
 import numpy as np
-from scipy import stats
+from scipy import stats  # type: ignore
 from ..nptypes import OneDimNDArray
 
 
