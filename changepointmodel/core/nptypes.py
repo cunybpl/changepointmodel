@@ -4,7 +4,7 @@ that are used for validating input and converting it from python primitives or a
 This can be treated as more or less a private module.     
 """
 import numpy as np
-from typing import Any, List, Union, Tuple
+from typing import Any, List, Union, Tuple, TypeAlias
 from nptyping import NDArray
 
 AnyByAnyNDArray = NDArray[(Any, ...), float]
@@ -15,7 +15,9 @@ NByOneNDArray = NDArray[
     ),
     float,
 ]  # [[1.], [2.], [3.], ...]
-OneDimNDArray = NDArray[(Any,), float]  # [ 1., 2., 3., ...]
+
+
+OneDimNDArray = NDArray[Tuple[Any], float]  # [ 1., 2., 3., ...]
 
 
 # pydantic aware numpy types.
