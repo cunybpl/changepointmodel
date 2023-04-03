@@ -3,7 +3,7 @@ The scorer module forwards calls to these implementations.
 """
 from typing import Union
 import numpy as np
-from sklearn import metrics as sklmetrics
+from sklearn import metrics as sklmetrics  # type: ignore
 
 from ..nptypes import OneDimNDArray
 

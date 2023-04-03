@@ -11,6 +11,7 @@ from .calc import loads as _loads
 
 from .pmodels import (
     EnergyParameterModel,
+    EnergyParameterModelT,
     EnergyParameterModelCoefficients,
     ParameterModelFunction,
 )
@@ -132,7 +133,7 @@ class Baseload(IBaseload):
 class AbstractLoadHandler(abc.ABC):
     def __init__(
         self,
-        model: EnergyParameterModel,
+        model: EnergyParameterModelT,
         cooling: ISensitivityLoad,
         heating: ISensitivityLoad,
         base: Optional[IBaseload] = None,

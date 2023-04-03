@@ -5,7 +5,7 @@ This can be treated as more or less a private module.
 """
 import numpy as np
 from typing import Any, List, Union, Tuple
-from nptyping import NDArray
+from nptyping import NDArray  # type: ignore
 
 AnyByAnyNDArray = NDArray[(Any, ...), float]
 NByOneNDArray = NDArray[

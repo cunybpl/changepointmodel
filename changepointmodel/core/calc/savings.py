@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional
 import numpy as np
 from . import uncertainties
 
@@ -11,7 +11,7 @@ def adjusted(
     pre_n: int,
     post_n: int,
     confidence_interval: float = 0.8,
-    scalar: float = None,
+    scalar: Optional[float] = None,
 ) -> Tuple[float, float, float, float]:
     """The adjusted savings uncertainty calculation for option-c methodology as defined in ashrae and implemented by BPL.
 
@@ -63,7 +63,7 @@ def weather_normalized(
     post_p: int,
     n_norm: int,
     confidence_interval: float = 0.8,
-    scalar: float = None,
+    scalar: Optional[float] = None,
 ) -> Tuple[float, float, float, float]:
     """The weather normalized savings uncertainty calculation for option-c methodology as defined in ashrae and implemented by BPL.
     Will check that pre_n post_n and n_norm are equal before proceeding with the calculation.
