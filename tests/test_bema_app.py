@@ -51,6 +51,25 @@ def test_run_baseline(baseline_request):
     response = app.run_baseline(request)
 
 
+def test_run_baseline_with_cvrmse_threshold(baseline_request):
+    req = baseline_request
+    req["model_config"]["model_filter"]["which"] = "cvrmse"
+    req["model_config"]["model_filter"]["how"] = "best_score"
+    request = models.BaselineChangepointModelRequest(**req)
+    response = app.run_baseline(request)
+
+    assert len(response.results) == 1
+
+
+def test_run_baseline_with_extras(baseline_request):
+    req = baseline_request
+    req["model_config"]["model_filter"]["extras"] = True
+    request = models.BaselineChangepointModelRequest(**req)
+    response = app.run_baseline(request)
+
+    assert len(response.results) == 1
+
+
 def test_run_baseline_with_norms(baseline_request):
     request = models.BaselineChangepointModelRequest(**baseline_request)
     response = app.run_baseline(request)
@@ -137,6 +156,19 @@ def test_run_option_c_with_no_filter(option_c_request, raw_energy_model_data):
 
 def test_run_option_c_with_exception(option_c_request):
     req = option_c_request
+    request = models.SavingsRequest(**req)
+
+    with pytest.raises(exc.BemaChangepointException):
+        app.run_optionc(request)
+
+
+def test_run_option_c_with_exception_in_post(option_c_request):
+    req = {
+        "pre": option_c_request["post"],
+        "post": option_c_request["pre"],
+        "confidence_interval": 0.8,
+        "scalar": None,
+    }
     request = models.SavingsRequest(**req)
 
     with pytest.raises(exc.BemaChangepointException):

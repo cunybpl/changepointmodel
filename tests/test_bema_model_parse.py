@@ -218,6 +218,17 @@ def test_EnergyParameterModelCoefficients_parsing_2P():
     assert parsed[0]["value"] == -1
 
 
+def test_EnergyParameterModelCoefficients_parsing_assertion_error():
+    model_type = "dum"
+
+    # cooling
+    data = {"yint": 1, "slopes": [1], "changepoints": None}
+
+    load_result = models.EnergyParameterModelCoefficients(**data)
+    with pytest.raises(AssertionError):
+        load_result.parse(model_type)
+
+
 def test_EnergyParameterModelCoefficients_parsing_3PC():
     model_type = "3PC"
 

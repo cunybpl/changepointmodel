@@ -1,5 +1,6 @@
 from changepointmodel.bema import filter_
 from changepointmodel.bema.models import FilterHowEnum, FilterWhichEnum
+import pytest
 
 
 def test_filter_best_score_with_good_model(dummy_result_for_filter_good):

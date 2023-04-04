@@ -144,7 +144,7 @@ class BemaChangepointModeler(object):
                 result = BemaChangepointResult().create(
                     estimator, loads, self._scorer, self._nac_calc
                 )
-            except Exception as err:
+            except Exception as err:  # pragma: no cover
                 logger.exception(err)
                 e = bema_changepoint_exception_wrapper(
                     err,
@@ -291,7 +291,7 @@ def run_optionc(req: SavingsRequest) -> SavingsResponse:
         for post in post_results:
             try:
                 result = BemaSavingsResult().create(pre, post, adjcalc, normcalc)
-            except Exception as err:
+            except Exception as err:  # pragma: no cover
                 logger.exception(err)
                 e = bema_changepoint_exception_wrapper(
                     err,
