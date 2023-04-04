@@ -1,4 +1,4 @@
-from .main import run_baseline, run_optionc, AppChangepointModeler
+from .main import run_baseline, run_optionc, ChangepointModelerApplication
 from .models import (
     EnergyChangepointModelResponse,
     SavingsResponse,
@@ -8,7 +8,7 @@ from .models import (
     SavingsResult,
 )
 from .config import get_changepoint_model_pair
-from .exc import bema_changepoint_exception_wrapper, AppChangepointException
+from .exc import bema_changepoint_exception_wrapper, ChangepointException
 from .filter_ import ChangepointEstimatorFilter
 from .extras import dpop, tstat
 

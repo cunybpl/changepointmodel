@@ -7,7 +7,7 @@ from typing import Generic
 
 
 @dataclass
-class AppChangepointResultContainer(
+class ChangepointResultContainer(
     Generic[ParamaterModelCallableT, EnergyParameterModelT]
 ):
     """This is useful storage needed in the application to handle option c modeling methodology.
@@ -20,6 +20,6 @@ class AppChangepointResultContainer(
     result: EnergyChangepointModelResult
 
 
-AppChangepointResultContainers = List[
-    AppChangepointResultContainer[ParamaterModelCallableT, EnergyParameterModelT]
+ChangepointResultContainers = List[
+    ChangepointResultContainer[ParamaterModelCallableT, EnergyParameterModelT]
 ]

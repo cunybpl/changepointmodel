@@ -7,7 +7,7 @@ import traceback
 from typing import Optional
 
 
-class AppChangepointException(Exception):
+class ChangepointException(Exception):
     def __init__(self, info: Optional[Dict[str, str]] = None, message: str = ""):
         self.info = info
         self.message = message
@@ -22,7 +22,7 @@ class AppChangepointException(Exception):
 
 def bema_changepoint_exception_wrapper(
     err: Exception, message: str, **info_kwargs: str
-) -> AppChangepointException:
+) -> ChangepointException:
     exc_type, exc_value, exc_traceback = sys.exc_info()
     info = {
         **info_kwargs,
@@ -30,5 +30,5 @@ def bema_changepoint_exception_wrapper(
         "tb": repr(traceback.format_exception(exc_type, exc_value, exc_traceback)),
     }
 
-    e = AppChangepointException(info=info, message=message)
+    e = ChangepointException(info=info, message=message)
     return e

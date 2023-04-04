@@ -9,12 +9,12 @@ def test_AppChangepointModeler(raw_energy_model_data):
 
     models = ["2P", "3PC", "3PH", "4P"]
 
-    cpm = main.AppChangepointModeler(oat=oat, usage=usage, models=models)
+    cpm = main.ChangepointModelerApplication(oat=oat, usage=usage, models=models)
 
     results = cpm.run()
     assert len(results) == 4
     res = results.pop(0)
-    assert isinstance(res, base.AppChangepointResultContainer)
+    assert isinstance(res, base.ChangepointResultContainer)
 
     res_pred_y = res.result.pred_y
     res_input_data_x = res.result.input_data.X
@@ -32,9 +32,9 @@ def test_AppChangepointModeler_with_exception(raw_energy_model_data):
 
     models = ["5P"]
 
-    cpm = main.AppChangepointModeler(oat=oat, usage=usage, models=models)
+    cpm = main.ChangepointModelerApplication(oat=oat, usage=usage, models=models)
 
-    with pytest.raises(exc.AppChangepointException):
+    with pytest.raises(exc.ChangepointException):
         cpm.run()
 
 
@@ -91,7 +91,7 @@ def test_run_baseline_with_exception(baseline_request):
     req["model_config"]["models"].append("5P")
     request = models.BaselineChangepointModelRequest(**req)
 
-    with pytest.raises(exc.AppChangepointException):
+    with pytest.raises(exc.ChangepointException):
         main.run_baseline(request)
 
 
@@ -158,7 +158,7 @@ def test_run_option_c_with_exception(option_c_request):
     req = option_c_request
     request = models.SavingsRequest(**req)
 
-    with pytest.raises(exc.AppChangepointException):
+    with pytest.raises(exc.ChangepointException):
         main.run_optionc(request)
 
 
@@ -171,5 +171,5 @@ def test_run_option_c_with_exception_in_post(option_c_request):
     }
     request = models.SavingsRequest(**req)
 
-    with pytest.raises(exc.AppChangepointException):
+    with pytest.raises(exc.ChangepointException):
         main.run_optionc(request)

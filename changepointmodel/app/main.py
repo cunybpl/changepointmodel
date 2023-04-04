@@ -15,9 +15,9 @@ from changepointmodel.core.savings import (
 from typing import Any
 from . import config
 from .filter_ import ChangepointEstimatorFilter
-from .results import AppChangepointResult, AppSavingsResult
+from .results import ChangepointResult, ChangepointSavingsResult
 
-from .base import AppChangepointResultContainer, AppChangepointResultContainers
+from .base import ChangepointResultContainer, ChangepointResultContainers
 
 from .models import (
     BaselineChangepointModelRequest,
@@ -31,10 +31,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from .exc import AppChangepointException, bema_changepoint_exception_wrapper
+from .exc import ChangepointException, bema_changepoint_exception_wrapper
 
 
-class AppChangepointModeler(object):
+class ChangepointModelerApplication(object):
     def __init__(
         self,
         oat: List[float],
@@ -117,16 +117,16 @@ class AppChangepointModeler(object):
 
     def run(
         self,
-    ) -> AppChangepointResultContainers[Any, Any]:
+    ) -> ChangepointResultContainers[Any, Any]:
         """Run the models asked for using the given config supplied in the constructor and return a set of results for each model.
         This also calculates
 
         Raises:
-            AppChangepointModelException: A calculation error occurs during modeling or calculating loads. This usually handles
+            ChangepointModelException: A calculation error occurs during modeling or calculating loads. This usually handles
             a LinAlgError in scipy
 
         Returns:
-            AppChangepointResultContainers[Any, Any]: _description_
+            ChangepointResultContainers[Any, Any]: _description_
         """
         results = []
         for model in self._models:
@@ -141,7 +141,7 @@ class AppChangepointModeler(object):
                 raise e from err
 
             try:
-                result = AppChangepointResult().create(
+                result = ChangepointResult().create(
                     estimator, loads, self._scorer, self._nac_calc
                 )
             except Exception as err:  # pragma: no cover
@@ -153,7 +153,7 @@ class AppChangepointModeler(object):
                 )
                 raise e from err
 
-            results.append(AppChangepointResultContainer(estimator, result))
+            results.append(ChangepointResultContainer(estimator, result))
 
         if self._estimator_filter:
             results = self._estimator_filter.filtered(results)
@@ -169,7 +169,7 @@ def _run_single_batch(
     cvrmse_threshold: float,
     norms: Optional[List[float]],
     model_filter: Optional[FilterConfig],
-) -> AppChangepointResultContainers[Any, Any]:
+) -> ChangepointResultContainers[Any, Any]:
     if model_filter:
         filt = ChangepointEstimatorFilter(
             which=model_filter.which, how=model_filter.how, extras=model_filter.extras
@@ -177,7 +177,7 @@ def _run_single_batch(
     else:
         filt = None
 
-    modeler = AppChangepointModeler(
+    modeler = ChangepointModelerApplication(
         oat=oat,
         usage=usage,
         models=models,
@@ -228,7 +228,7 @@ def run_optionc(req: SavingsRequest) -> SavingsResponse:
         req (SavingsRequest): A savings request object.
 
     Raises:
-        AppChangepointException:  If pre post or savings calculations fail.
+        ChangepointException:  If pre post or savings calculations fail.
 
     Returns:
         SavingsResponse: A savings response object.
@@ -262,8 +262,8 @@ def run_optionc(req: SavingsRequest) -> SavingsResponse:
             norms=req.norms,
             model_filter=pre_req.model_config.model_filter,
         )
-    except AppChangepointException as err:
-        e = AppChangepointException(
+    except ChangepointException as err:
+        e = ChangepointException(
             info={"batch": "pre", **err.info}, message=err.message  # type: ignore
         )
         raise e from err
@@ -278,8 +278,8 @@ def run_optionc(req: SavingsRequest) -> SavingsResponse:
             norms=req.norms,
             model_filter=post_req.model_config.model_filter,
         )
-    except AppChangepointException as err:
-        e = AppChangepointException(
+    except ChangepointException as err:
+        e = ChangepointException(
             info={"batch": "post", **err.info}, message=err.message  # type: ignore
         )
         raise e from err
@@ -290,7 +290,7 @@ def run_optionc(req: SavingsRequest) -> SavingsResponse:
     for pre in pre_results:
         for post in post_results:
             try:
-                result = AppSavingsResult().create(pre, post, adjcalc, normcalc)
+                result = ChangepointSavingsResult().create(pre, post, adjcalc, normcalc)
             except Exception as err:  # pragma: no cover
                 logger.exception(err)
                 e = bema_changepoint_exception_wrapper(

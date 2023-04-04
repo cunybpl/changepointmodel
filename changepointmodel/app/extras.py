@@ -7,28 +7,28 @@ They will filter out any models silently that do not conform to these conditions
 
 
 import numpy as np
-from typing import Iterator, List, Tuple
-from .base import AppChangepointResultContainers, AppChangepointResultContainer
+from typing import Iterator, Tuple
+from .base import ChangepointResultContainers, ChangepointResultContainer
 from changepointmodel.core.pmodels import ParamaterModelCallableT, EnergyParameterModelT
 
 import numpy.typing as npt
 
 
 def dpop(
-    results: AppChangepointResultContainers[
+    results: ChangepointResultContainers[
         ParamaterModelCallableT, EnergyParameterModelT
     ],
 ) -> Iterator[
-    AppChangepointResultContainer[ParamaterModelCallableT, EnergyParameterModelT]
+    ChangepointResultContainer[ParamaterModelCallableT, EnergyParameterModelT]
 ]:
     """Checks if a models heating and cooling are within an established threshold that makes
     sense for building data.
 
     Args:
-        results (AppChangepointResultContainers): The results to be filtered.
+        results (ChangepointResultContainerss): The results to be filtered.
 
     Yields:
-        Iterator[AppChangepointResultContainer]: Yields filtered result containers
+        Iterator[ChangepointResultContainers]: Yields filtered result containers
     """
     for result in results:
         r = result.result
@@ -80,19 +80,19 @@ def dpop(
 
 
 def shape(
-    results: AppChangepointResultContainers[
+    results: ChangepointResultContainers[
         ParamaterModelCallableT, EnergyParameterModelT
     ],
 ) -> Iterator[
-    AppChangepointResultContainer[ParamaterModelCallableT, EnergyParameterModelT]
+    ChangepointResultContainer[ParamaterModelCallableT, EnergyParameterModelT]
 ]:
     """Checks that certain slopes of models conform to a shape expected from building energy data.
 
     Args:
-        results (AppChangepointResultContainers): The results to be filtered.
+        results (ChangepointResultContainerss): The results to be filtered.
 
     Yields:
-        Iterator[AppChangepointResultContainer]: Yields filtered result containers
+        Iterator[ChangepointResultContainers]: Yields filtered result containers
     """
     for result in results:
         r = result.result
@@ -150,19 +150,19 @@ def _get_array_left(
 
 
 def tstat(
-    results: AppChangepointResultContainers[
+    results: ChangepointResultContainers[
         ParamaterModelCallableT, EnergyParameterModelT
     ],
 ) -> Iterator[
-    AppChangepointResultContainer[ParamaterModelCallableT, EnergyParameterModelT]
+    ChangepointResultContainer[ParamaterModelCallableT, EnergyParameterModelT]
 ]:
     """Determines if slopes are statistically significant relevant to one another.
 
     Args:
-        results (AppChangepointResultContainers): The results to be filtered.
+        results (ChangepointResultContainerss): The results to be filtered.
 
     Yields:
-        Iterator[AppChangepointResultContainer]: Yields filtered result containers
+        Iterator[ChangepointResultContainers]: Yields filtered result containers
     """
     for result in results:
         r = result.result

@@ -7,7 +7,7 @@ By using this module we can analyze and filter the results after they have been 
 """
 
 from typing import List
-from .base import AppChangepointResultContainers, AppChangepointResultContainer
+from .base import ChangepointResultContainers, ChangepointResultContainer
 from .models import FilterHowEnum, FilterWhichEnum
 from . import extras
 
@@ -18,12 +18,12 @@ from typing import Generic
 class _MungedResult(Generic[ParamaterModelCallableT, EnergyParameterModelT]):
     def __init__(
         self,
-        result: AppChangepointResultContainer[
+        result: ChangepointResultContainer[
             ParamaterModelCallableT, EnergyParameterModelT
         ],
         score_name: str,
     ):
-        self.result: AppChangepointResultContainer[
+        self.result: ChangepointResultContainer[
             ParamaterModelCallableT, EnergyParameterModelT
         ] = result
         self.score_name = score_name
@@ -43,7 +43,7 @@ MungedResults = List[_MungedResult[ParamaterModelCallableT, EnergyParameterModel
 
 def _filter_best_score(
     munged: MungedResults[ParamaterModelCallableT, EnergyParameterModelT],
-) -> AppChangepointResultContainers[ParamaterModelCallableT, EnergyParameterModelT]:
+) -> ChangepointResultContainers[ParamaterModelCallableT, EnergyParameterModelT]:
     if len(munged) == 1:
         return [munged[0].result]
 
@@ -58,13 +58,13 @@ def _filter_best_score(
 
 def _filter_threshold_ok(
     munged: MungedResults[ParamaterModelCallableT, EnergyParameterModelT],
-) -> AppChangepointResultContainers[ParamaterModelCallableT, EnergyParameterModelT]:
+) -> ChangepointResultContainers[ParamaterModelCallableT, EnergyParameterModelT]:
     return [m.result for m in munged if m.score.ok]
 
 
 def _filter_threshold_ok_first_is_best(
     munged: MungedResults[ParamaterModelCallableT, EnergyParameterModelT],
-) -> AppChangepointResultContainers[ParamaterModelCallableT, EnergyParameterModelT]:
+) -> ChangepointResultContainers[ParamaterModelCallableT, EnergyParameterModelT]:
     ok = [m.result for m in munged if m.score.ok]
     if len(ok) == 0:
         return ok
@@ -100,11 +100,11 @@ class ChangepointEstimatorFilter(object):
 
     def filtered(
         self,
-        results: AppChangepointResultContainers[
+        results: ChangepointResultContainers[
             ParamaterModelCallableT, EnergyParameterModelT
         ],
     ) -> List[
-        AppChangepointResultContainer[ParamaterModelCallableT, EnergyParameterModelT]
+        ChangepointResultContainer[ParamaterModelCallableT, EnergyParameterModelT]
     ]:
         """Filters these results based on the provided parameters returning 0:N result containers based on the
         configuration.
