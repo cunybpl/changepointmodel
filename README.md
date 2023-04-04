@@ -19,7 +19,7 @@ We have found over time that while doing these individual calculations is not di
 * Loosely coupled, interface oriented and extensible (`changepoint.core`)
 * Ready built high level application tooling (`changepoint.bema`)
 * Wrapper classes for `scipy.optimize.curve_fit` that conform to the `scikit-learn` interface. 
-* PEP484 complient (from 2.2.0). Overall strong typing approach. 
+* PEP484 complient (from 3.0.0). Overall strong typing approach. 
 * Heavily tested and production ready 
 
 
