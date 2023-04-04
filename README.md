@@ -13,11 +13,11 @@ This is a small toolkit for processing building energy data centered around chan
 We have found over time that while doing these individual calculations is not difficult, doing them at scale in a well defined way can be. Therefore we tried to design a flexible library that can be used in a variety of contexts such as data science, machine learning and batch processing.
 
 
-### Features 
+## Features 
 ----
 
 * Loosely coupled, interface oriented and extensible (`changepoint.core`)
-* Ready built high level application tooling (`changepoint.bema`)
+* Ready built high level application tooling (`changepoint.app`)
 * Wrapper classes for `scipy.optimize.curve_fit` that conform to the `scikit-learn` interface. 
 * PEP484 complient (from 3.0.0). Overall strong typing approach. 
 * Heavily tested and production ready 
