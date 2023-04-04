@@ -1,5 +1,5 @@
-from changepointmodel.bema import filter_
-from changepointmodel.bema.models import FilterHowEnum, FilterWhichEnum
+from changepointmodel.app import filter_
+from changepointmodel.app.models import FilterHowEnum, FilterWhichEnum
 import pytest
 
 

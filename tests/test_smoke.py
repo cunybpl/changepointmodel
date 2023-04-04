@@ -2,7 +2,7 @@ import pytest
 
 
 def test_imports_bema():
-    from changepointmodel.bema import BemaChangepointModeler, SavingsResponse
+    from changepointmodel.app import AppChangepointModeler, SavingsResponse
 
 
 def test_imports_changepoint_core():
@@ -15,7 +15,7 @@ def test_imports_changepoint_core():
 
 
 def test_imports_changepoint():
-    from changepointmodel.bema import BemaChangepointModeler, SavingsResponse
+    from changepointmodel.app import AppChangepointModeler, SavingsResponse
     from changepointmodel.core import (
         EnergyChangepointEstimator,
         EnergyChangepointLoadsAggregator,

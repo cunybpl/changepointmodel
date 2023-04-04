@@ -1,4 +1,4 @@
-from changepointmodel.bema import models
+from changepointmodel.app import models
 import pytest
 import pydantic
 

@@ -1,5 +1,5 @@
-from changepointmodel.bema import extras
-from changepointmodel.bema.models import FilterHowEnum, FilterWhichEnum
+from changepointmodel.app import extras
+from changepointmodel.app.models import FilterHowEnum, FilterWhichEnum
 
 
 def test_extras_filter_shape_good_models(

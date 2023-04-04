@@ -15,13 +15,13 @@ from changepointmodel.core.savings import (
     AshraeNormalizedSavingsCalculator,
 )
 
-from .base import BemaChangepointResultContainer
+from .base import AppChangepointResultContainer
 from typing import Optional
 
 from changepointmodel.core.pmodels import ParamaterModelCallableT, EnergyParameterModelT
 
 
-class BemaChangepointResult(object):
+class AppChangepointResult(object):
     def create(
         self,
         estimator: EnergyChangepointEstimator[
@@ -53,13 +53,13 @@ class BemaChangepointResult(object):
         return EnergyChangepointModelResult(**data)  # type: ignore
 
 
-class BemaSavingsResult(object):
+class AppSavingsResult(object):
     def create(
         self,
-        pre: BemaChangepointResultContainer[
+        pre: AppChangepointResultContainer[
             ParamaterModelCallableT, EnergyParameterModelT
         ],
-        post: BemaChangepointResultContainer[
+        post: AppChangepointResultContainer[
             ParamaterModelCallableT, EnergyParameterModelT
         ],
         adjcalc: AshraeAdjustedSavingsCalculator,

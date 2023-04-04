@@ -49,12 +49,12 @@ Model dependent calculations and ashrae savings formulas.
 * `savings` - ashrae savings formulas for monthly data 
 * `uncertainties` - ashrae uncertainty calculations for savings 
 
-__bema__ 
+__app__ 
 --- 
 
 This is application level code that is provided as a convenience for batch processing data. 
 
-* `app` - Run an option-c or baseline set of models. 
+* `main` - Run an option-c or baseline set of models. 
 * `config` - A standard configuration of the `core` components 
 * `filter_` - A module we use for filtering data based on procedural constraints 
 * `extras` - Extra model filtering

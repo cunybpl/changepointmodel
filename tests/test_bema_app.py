@@ -1,20 +1,20 @@
-from changepointmodel.bema import app, base, exc, models
+from changepointmodel.app import base, exc, main, models
 
 import pytest
 
 
-def test_BemaChangepointModeler(raw_energy_model_data):
+def test_AppChangepointModeler(raw_energy_model_data):
     usage = raw_energy_model_data["pre_data"]["usage"]
     oat = raw_energy_model_data["pre_data"]["oat"]
 
     models = ["2P", "3PC", "3PH", "4P"]
 
-    cpm = app.BemaChangepointModeler(oat=oat, usage=usage, models=models)
+    cpm = main.AppChangepointModeler(oat=oat, usage=usage, models=models)
 
     results = cpm.run()
     assert len(results) == 4
     res = results.pop(0)
-    assert isinstance(res, base.BemaChangepointResultContainer)
+    assert isinstance(res, base.AppChangepointResultContainer)
 
     res_pred_y = res.result.pred_y
     res_input_data_x = res.result.input_data.X
@@ -26,21 +26,21 @@ def test_BemaChangepointModeler(raw_energy_model_data):
     assert list(res_pred_y) == ex_pred_y
 
 
-def test_BemaChangepointModeler_with_exception(raw_energy_model_data):
+def test_AppChangepointModeler_with_exception(raw_energy_model_data):
     usage = raw_energy_model_data["pre_data"]["usage"]
     oat = raw_energy_model_data["pre_data"]["oat"]
 
     models = ["5P"]
 
-    cpm = app.BemaChangepointModeler(oat=oat, usage=usage, models=models)
+    cpm = main.AppChangepointModeler(oat=oat, usage=usage, models=models)
 
-    with pytest.raises(exc.BemaChangepointException):
+    with pytest.raises(exc.AppChangepointException):
         cpm.run()
 
 
 def test_run_baseline(baseline_request):
     request = models.BaselineChangepointModelRequest(**baseline_request)
-    response = app.run_baseline(request)
+    response = main.run_baseline(request)
 
     assert len(response.results) == 1
 
@@ -48,7 +48,7 @@ def test_run_baseline(baseline_request):
     req = baseline_request
     req["model_config"].pop("model_filter")
     request = models.BaselineChangepointModelRequest(**req)
-    response = app.run_baseline(request)
+    response = main.run_baseline(request)
 
 
 def test_run_baseline_with_cvrmse_threshold(baseline_request):
@@ -56,7 +56,7 @@ def test_run_baseline_with_cvrmse_threshold(baseline_request):
     req["model_config"]["model_filter"]["which"] = "cvrmse"
     req["model_config"]["model_filter"]["how"] = "best_score"
     request = models.BaselineChangepointModelRequest(**req)
-    response = app.run_baseline(request)
+    response = main.run_baseline(request)
 
     assert len(response.results) == 1
 
@@ -65,14 +65,14 @@ def test_run_baseline_with_extras(baseline_request):
     req = baseline_request
     req["model_config"]["model_filter"]["extras"] = True
     request = models.BaselineChangepointModelRequest(**req)
-    response = app.run_baseline(request)
+    response = main.run_baseline(request)
 
     assert len(response.results) == 1
 
 
 def test_run_baseline_with_norms(baseline_request):
     request = models.BaselineChangepointModelRequest(**baseline_request)
-    response = app.run_baseline(request)
+    response = main.run_baseline(request)
 
     assert len(response.results) == 1
 
@@ -81,7 +81,7 @@ def test_run_baseline_with_norms(baseline_request):
     req["norms"] = [1] * 12  # adding norms to see if it runs
     req["model_config"].pop("model_filter")
     request = models.BaselineChangepointModelRequest(**req)
-    response = app.run_baseline(request)
+    response = main.run_baseline(request)
 
     assert len(response.results) == 4
 
@@ -91,15 +91,15 @@ def test_run_baseline_with_exception(baseline_request):
     req["model_config"]["models"].append("5P")
     request = models.BaselineChangepointModelRequest(**req)
 
-    with pytest.raises(exc.BemaChangepointException):
-        app.run_baseline(request)
+    with pytest.raises(exc.AppChangepointException):
+        main.run_baseline(request)
 
 
 def test_run_option_c_with_filter(option_c_request):
     req = option_c_request
     req["pre"]["model_config"]["models"] = ["2P", "3PC", "3PH", "4P"]
     request = models.SavingsRequest(**req)
-    response = app.run_optionc(request)
+    response = main.run_optionc(request)
 
     assert len(response.results) == 1  # only one best model for pre and post
 
@@ -109,7 +109,7 @@ def test_run_option_c_with_filter_with_norms(option_c_request):
     req["pre"]["model_config"]["models"] = ["2P", "3PC", "3PH", "4P"]
     req["norms"] = [1] * 12
     request = models.SavingsRequest(**req)
-    response = app.run_optionc(request)
+    response = main.run_optionc(request)
 
     assert len(response.results) == 1  # only one best model for pre and post
     res = response.results[0]
@@ -124,7 +124,7 @@ def test_run_option_c_with_no_filter(option_c_request, raw_energy_model_data):
     req["pre"]["model_config"].pop("model_filter")
     req["post"]["model_config"].pop("model_filter")
     request = models.SavingsRequest(**req)
-    response = app.run_optionc(request)
+    response = main.run_optionc(request)
 
     assert len(response.results) == 20  # 4 models for pre and 5 models for post
 
@@ -158,8 +158,8 @@ def test_run_option_c_with_exception(option_c_request):
     req = option_c_request
     request = models.SavingsRequest(**req)
 
-    with pytest.raises(exc.BemaChangepointException):
-        app.run_optionc(request)
+    with pytest.raises(exc.AppChangepointException):
+        main.run_optionc(request)
 
 
 def test_run_option_c_with_exception_in_post(option_c_request):
@@ -171,5 +171,5 @@ def test_run_option_c_with_exception_in_post(option_c_request):
     }
     request = models.SavingsRequest(**req)
 
-    with pytest.raises(exc.BemaChangepointException):
-        app.run_optionc(request)
+    with pytest.raises(exc.AppChangepointException):
+        main.run_optionc(request)

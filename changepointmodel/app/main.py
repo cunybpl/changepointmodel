@@ -15,9 +15,9 @@ from changepointmodel.core.savings import (
 from typing import Any
 from . import config
 from .filter_ import ChangepointEstimatorFilter
-from .results import BemaChangepointResult, BemaSavingsResult
+from .results import AppChangepointResult, AppSavingsResult
 
-from .base import BemaChangepointResultContainer, BemaChangepointResultContainers
+from .base import AppChangepointResultContainer, AppChangepointResultContainers
 
 from .models import (
     BaselineChangepointModelRequest,
@@ -31,10 +31,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from .exc import BemaChangepointException, bema_changepoint_exception_wrapper
+from .exc import AppChangepointException, bema_changepoint_exception_wrapper
 
 
-class BemaChangepointModeler(object):
+class AppChangepointModeler(object):
     def __init__(
         self,
         oat: List[float],
@@ -55,9 +55,9 @@ class BemaChangepointModeler(object):
             4. Optionally calculate normalized annual consumption
             5. Optionally filter the result set using the `changepointmodel.bema.filter_` API.
 
-        Result data is handled in a special BemaChangepointResult class that returns a serializable type.
+        Result data is handled in a special AppChangepointResult class that returns a serializable type.
 
-        If a calculation error occurs it is wrapped in a BemaChangepointException and re raised with information related to
+        If a calculation error occurs it is wrapped in a AppChangepointException and re raised with information related to
         the point of failure. Note that the current implementation of the modeler will fail fast. If any requested models throw
         a calculation error then we fail the entire batch.
 
@@ -117,16 +117,16 @@ class BemaChangepointModeler(object):
 
     def run(
         self,
-    ) -> BemaChangepointResultContainers[Any, Any]:
+    ) -> AppChangepointResultContainers[Any, Any]:
         """Run the models asked for using the given config supplied in the constructor and return a set of results for each model.
         This also calculates
 
         Raises:
-            BemaChangepointModelException: A calculation error occurs during modeling or calculating loads. This usually handles
+            AppChangepointModelException: A calculation error occurs during modeling or calculating loads. This usually handles
             a LinAlgError in scipy
 
         Returns:
-            BemaChangepointResultContainers[Any, Any]: _description_
+            AppChangepointResultContainers[Any, Any]: _description_
         """
         results = []
         for model in self._models:
@@ -141,7 +141,7 @@ class BemaChangepointModeler(object):
                 raise e from err
 
             try:
-                result = BemaChangepointResult().create(
+                result = AppChangepointResult().create(
                     estimator, loads, self._scorer, self._nac_calc
                 )
             except Exception as err:  # pragma: no cover
@@ -153,7 +153,7 @@ class BemaChangepointModeler(object):
                 )
                 raise e from err
 
-            results.append(BemaChangepointResultContainer(estimator, result))
+            results.append(AppChangepointResultContainer(estimator, result))
 
         if self._estimator_filter:
             results = self._estimator_filter.filtered(results)
@@ -169,7 +169,7 @@ def _run_single_batch(
     cvrmse_threshold: float,
     norms: Optional[List[float]],
     model_filter: Optional[FilterConfig],
-) -> BemaChangepointResultContainers[Any, Any]:
+) -> AppChangepointResultContainers[Any, Any]:
     if model_filter:
         filt = ChangepointEstimatorFilter(
             which=model_filter.which, how=model_filter.how, extras=model_filter.extras
@@ -177,7 +177,7 @@ def _run_single_batch(
     else:
         filt = None
 
-    modeler = BemaChangepointModeler(
+    modeler = AppChangepointModeler(
         oat=oat,
         usage=usage,
         models=models,
@@ -228,7 +228,7 @@ def run_optionc(req: SavingsRequest) -> SavingsResponse:
         req (SavingsRequest): A savings request object.
 
     Raises:
-        BemaChangepointException:  If pre post or savings calculations fail.
+        AppChangepointException:  If pre post or savings calculations fail.
 
     Returns:
         SavingsResponse: A savings response object.
@@ -262,8 +262,8 @@ def run_optionc(req: SavingsRequest) -> SavingsResponse:
             norms=req.norms,
             model_filter=pre_req.model_config.model_filter,
         )
-    except BemaChangepointException as err:
-        e = BemaChangepointException(
+    except AppChangepointException as err:
+        e = AppChangepointException(
             info={"batch": "pre", **err.info}, message=err.message  # type: ignore
         )
         raise e from err
@@ -278,19 +278,19 @@ def run_optionc(req: SavingsRequest) -> SavingsResponse:
             norms=req.norms,
             model_filter=post_req.model_config.model_filter,
         )
-    except BemaChangepointException as err:
-        e = BemaChangepointException(
+    except AppChangepointException as err:
+        e = AppChangepointException(
             info={"batch": "post", **err.info}, message=err.message  # type: ignore
         )
         raise e from err
 
     # NOTE if we don't have pre or post from modeling via a filter we will
-    # essentially just skip this set of loops. Which means that we don't need to handle cases in BemaSavingsResult.create
+    # essentially just skip this set of loops. Which means that we don't need to handle cases in AppSavingsResult.create
     out = []
     for pre in pre_results:
         for post in post_results:
             try:
-                result = BemaSavingsResult().create(pre, post, adjcalc, normcalc)
+                result = AppSavingsResult().create(pre, post, adjcalc, normcalc)
             except Exception as err:  # pragma: no cover
                 logger.exception(err)
                 e = bema_changepoint_exception_wrapper(
