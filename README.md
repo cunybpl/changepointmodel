@@ -1,5 +1,7 @@
 # changepointmodel 
 --- 
+[![CI](https://github.com/cunybpl/changepointmodel/actions/workflows/unittests.yaml/badge.svg)](https://github.com/cunybpl/changepointmodel/actions/workflows/unittests.yaml)
+
 Changepoint modeling, load disaggregation and savings methodologies consistent with ashrae guidelines. 
 
 
@@ -21,7 +23,7 @@ We have found over time that while doing these individual calculations is not di
 * Heavily tested and production ready 
 
 
-The `core` package consists of the lower level machinery and calculation APIs. The `bema` package contains higher level components organized into convenient ready made application components for common building energy modeling tasks and batch processing. 
+The `core` package consists of the lower level machinery and calculation APIs. The `app` package contains higher level components organized into a ready made application for common building energy modeling tasks and batch processing. 
 
 We have heavily documented each module's public interface. Below is a brief outline of what is inside 
 
