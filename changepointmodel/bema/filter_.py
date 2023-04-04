@@ -1,4 +1,11 @@
-import logging
+""" This module provides filtering functionality for the application. In many cases when a model fails to 
+meet certain statistical or logical criteria we do not want it returned. 
+
+By using this module we can analyze and filter the results after they have been generated.
+
+
+"""
+
 from typing import List
 from .base import BemaChangepointResultContainers, BemaChangepointResultContainer
 from .models import FilterHowEnum, FilterWhichEnum
@@ -66,6 +73,27 @@ def _filter_threshold_ok_first_is_best(
 
 class ChangepointEstimatorFilter(object):
     def __init__(self, which: FilterWhichEnum, how: FilterHowEnum, extras: bool = True):
+        """This object is responsible for filtering models after they have been fit using a set
+        of criteria at runtime.
+
+        The provided parameters:
+            1. which - will filter either on r2 or cvrmse depending on your use case. Higher r2 values are better
+                and lower cvrmse values are better.
+            2. how - the process used to filter.
+                * `best_score` - simply picks the best r2 or cvrmse based on your choice in `which`. This does not need
+                    to meet the threshold criteria.
+                * `threshold_ok` - filters on whether your chosen score is above the threshold. This will yield all results
+                    that meet the threshold criteria and drop those that do not.
+                * `threshold_ok_first_is_best` - filters on whether your chosen score is above the threshold. From
+                those results it will return the top result in the list.
+            3. extras - runs a gauntlet of extra checks described in the `extras` module.
+
+        Args:
+            which (FilterWhichEnum): Filter on either r2 or cvrmse.
+            how (FilterHowEnum): How to filter the model.
+            extras (bool, optional): Use functionality in the extras module to further filter models using data population,
+                shape, and tstat tests. Defaults to True.
+        """
         self._which = which
         self._how = how
         self._extras = extras
@@ -78,18 +106,16 @@ class ChangepointEstimatorFilter(object):
     ) -> List[
         BemaChangepointResultContainer[ParamaterModelCallableT, EnergyParameterModelT]
     ]:
-        """Fitler models and return MungedResults.
+        """Filters these results based on the provided parameters returning 0:N result containers based on the
+        configuration.
 
         NOTE this is refactored behavior from # 212, 213
 
         Args:
             results (BemaChangepointResultContainers): _description_
 
-        Raises:
-            ValueError: _description_
-
         Returns:
-            MungedResults: _description_
+            BemaChangepointResultContainer: A filtered changepointmodel result container.
         """
         if self._extras:
             results = [
@@ -98,9 +124,7 @@ class ChangepointEstimatorFilter(object):
             results = [
                 r for r in extras.dpop(results)
             ]  # check heatmonths coolmonths data population
-            results = [
-                r for r in extras.tstat(results)
-            ]  # check tstat... i guess its supposed to do something...
+            results = [r for r in extras.tstat(results)]  # check tstat...
             if len(results) == 0:
                 return results
 

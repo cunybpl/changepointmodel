@@ -262,24 +262,6 @@ files = [
 ]
 
 [[package]]
-name = "nptyping"
-version = "1.4.4"
-description = "Type hints for Numpy."
-category = "main"
-optional = false
-python-versions = ">=3.5"
-files = [
-    {file = "nptyping-1.4.4-py3-none-any.whl", hash = "sha256:8128473b8ba0e65f3d6edc727cd99024e162edcf7e8a0ea8f9dfa6b070934d14"},
-]
-
-[package.dependencies]
-numpy = "*"
-typish = ">=1.7.0"
-
-[package.extras]
-test = ["autoflake", "codecov", "coverage", "isort", "pycodestyle", "pylint", "pytest", "radon", "scons", "xenon"]
-
-[[package]]
 name = "numpy"
 version = "1.24.2"
 description = "Fundamental package for array computing in Python"
@@ -605,21 +587,7 @@ files = [
     {file = "typing_extensions-4.5.0.tar.gz", hash = "sha256:5cb5f4a79139d699607b3ef622a1dedafa84e115ab0024e0d9c044a9479ca7cb"},
 ]
 
-[[package]]
-name = "typish"
-version = "1.9.3"
-description = "Functionality for types"
-category = "main"
-optional = false
-python-versions = "*"
-files = [
-    {file = "typish-1.9.3-py3-none-any.whl", hash = "sha256:03cfee5e6eb856dbf90244e18f4e4c41044c8790d5779f4e775f63f982e2f896"},
-]
-
-[package.extras]
-test = ["codecov", "coverage", "mypy", "nptyping (>=1.3.0)", "numpy", "pycodestyle", "pylint", "pytest"]
-
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8, <3.12"
-content-hash = "2212990d16aa96a0ba9c303167ce02b5f97d6e6bf576723c5511a554621777e5"
+content-hash = "e10387f5208f337fc2b77cb557c1195ebe8ff0e5b3dbfe1981d5aed3fa7433f1"

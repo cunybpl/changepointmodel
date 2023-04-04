@@ -45,16 +45,35 @@ class BemaChangepointModeler(object):
         norms: Optional[List[float]] = None,
         estimator_filter: Optional[ChangepointEstimatorFilter] = None,
     ):
-        """Runs a single set of changepoint models using the API from the `changepointmodel` lib.
+        """Runs a single set of changepoint models using the API from the `changepointmodel` lib. This is the more or
+        less standard application we use to do changepoint modeling on our servers.
+
+        This class will:
+            1. Accept and validate configuration using our provided types.
+            2. For each requested model try to fit a changepoint and determine loads using `changepointmodel.core` APIs.
+            3. Provide some scoring metrics
+            4. Optionally calculate normalized annual consumption
+            5. Optionally filter the result set using the `changepointmodel.bema.filter_` API.
+
+        Result data is handled in a special BemaChangepointResult class that returns a serializable type.
+
+        If a calculation error occurs it is wrapped in a BemaChangepointException and re raised with information related to
+        the point of failure. Note that the current implementation of the modeler will fail fast. If any requested models throw
+        a calculation error then we fail the entire batch.
+
+        If you want different behavior simply subclass this app and provide a different run method that returns
 
         Args:
-            oat (List[float]): _description_
-            usage (List[float]): _description_
-            models (List[str], optional): _description_. Defaults to None.
-            r2_threshold (float, optional): _description_. Defaults to 0.75.
-            cvrmse_threshold (float, optional): _description_. Defaults to 0.5.
-            norms (List[float], optional): _description_. Defaults to None.
-            estimator_filter (ChangepointEstimatorFilter, optional): _description_. Defaults to None.
+            oat (List[float]): The X array. Outside air temperature.
+            usage (List[float]): The y array. Usage.
+            models (List[str], optional): 1-5 model types as defined in the model type enum. Defaults to None which runs all
+                models starting with 5P -> 2P.
+            r2_threshold (float, optional): The filtering threshold for r2 for Scorer. Defaults to 0.75.
+            cvrmse_threshold (float, optional): The filtering threshold for cvrmse for Scorer. Defaults to 0.5.
+            norms (List[float], optional): A list of norms for calculating normalized annual consumption based on the model.
+                If not provided will skip nac calculation. Defaults to None.
+            estimator_filter (ChangepointEstimatorFilter, optional): The post model filtering configuration. This will remove models from
+                the result set based on the config using `changepointmodel.bema.filter_` module. Defaults to None which is no filtering.
         """
 
         self._input_data = CurvefitEstimatorDataModel(X=oat, y=usage)  # type: ignore
@@ -74,7 +93,6 @@ class BemaChangepointModeler(object):
         cvrmse_scorer = scoring.ScoreEval(
             scoring.Cvrmse(), cvrmse_threshold, lambda a, b: a < b  # type: ignore
         )
-
         return scoring.Scorer([r2_scorer, cvrmse_scorer])
 
     def _fit(
@@ -85,9 +103,9 @@ class BemaChangepointModeler(object):
     ) -> None:
         assert self._input_data.y is not None
         X, y, original_ordering = argsort_1d_idx(self._input_data.X, self._input_data.y)
-        estimator.fit(X, y)
         # XXX see https://github.com/cunybpl/changepointmodel/issues/67
-        estimator._original_ordering = original_ordering
+        estimator.original_ordering = original_ordering
+        estimator.fit(X, y)
 
     def _prep_nac(
         self, norms: Optional[List[float]] = None
@@ -100,6 +118,16 @@ class BemaChangepointModeler(object):
     def run(
         self,
     ) -> BemaChangepointResultContainers[Any, Any]:
+        """Run the models asked for using the given config supplied in the constructor and return a set of results for each model.
+        This also calculates
+
+        Raises:
+            BemaChangepointModelException: A calculation error occurs during modeling or calculating loads. This usually handles
+            a LinAlgError in scipy
+
+        Returns:
+            BemaChangepointResultContainers[Any, Any]: _description_
+        """
         results = []
         for model in self._models:
             estimator, loads = config.get_changepoint_model_pair(model)
@@ -115,7 +143,7 @@ class BemaChangepointModeler(object):
             try:
                 result = BemaChangepointResult().create(
                     estimator, loads, self._scorer, self._nac_calc
-                )  # XXX TODO error handling -- math could fail
+                )
             except Exception as err:
                 logger.exception(err)
                 e = bema_changepoint_exception_wrapper(
@@ -172,6 +200,14 @@ def _format_norms(norms: List[float]) -> nptypes.AnyByAnyNDArray[np.float64]:
 def run_baseline(
     req: BaselineChangepointModelRequest,
 ) -> EnergyChangepointModelResponse:
+    """Runs a single batch of changepointmodels for a given request.
+
+    Args:
+        req (BaselineChangepointModelRequest): A request object.
+
+    Returns:
+        EnergyChangepointModelResponse: A response object.
+    """
     results = _run_single_batch(
         oat=req.usage.oat,
         usage=req.usage.usage,
@@ -185,6 +221,18 @@ def run_baseline(
 
 
 def run_optionc(req: SavingsRequest) -> SavingsResponse:
+    """This runs an option-c savings request that conforms to ashrae guidelines for
+    adjusted and normalized energy savings.
+
+    Args:
+        req (SavingsRequest): A savings request object.
+
+    Raises:
+        BemaChangepointException:  If pre post or savings calculations fail.
+
+    Returns:
+        SavingsResponse: A savings response object.
+    """
     pre_req = req.pre
     post_req = req.post
 

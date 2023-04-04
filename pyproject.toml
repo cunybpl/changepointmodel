@@ -12,7 +12,6 @@ authors = [ "cunybpl <dev@cunybpl.org>",]
 python = ">=3.8, <3.12"
 pydantic = "^1.8.2"
 scikit-learn = "^1.2.1"
-nptyping = "^1.4.3"
 mypy = "^1.0.1"
 black = "^23.1.0"
 

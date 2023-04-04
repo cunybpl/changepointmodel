@@ -40,11 +40,11 @@ class CurvefitEstimatorDataModel(pydantic.BaseModel):
 
             if values["sigma"] is None:
                 if xlen != ylen:
-                    raise ValueError(f"X and y lengths do not match.")
+                    raise ValueError("X and y lengths do not match.")
             else:
                 siglen = len(values["sigma"])
                 if not xlen == ylen == siglen:
-                    raise ValueError(f"X, y and sigma lengths to not match.")
+                    raise ValueError("X, y and sigma lengths to not match.")
 
         return values
 

@@ -1,5 +1,6 @@
-""" Extras module provides edge case checks for building energy use cases. These guards are included 
-by default within a filter config object but can be switched off if needed.
+""" 
+Extras module provides edge case checks for building energy use cases. These guards are included 
+by default within a filter config object at runtime but can be switched off if needed.
 
 They will filter out any models silently that do not conform to these conditions.
 """
@@ -24,10 +25,10 @@ def dpop(
     sense for building data.
 
     Args:
-        results (BemaChangepointResultContainers): _description_
+        results (BemaChangepointResultContainers): The results to be filtered.
 
     Yields:
-        Iterator[BemaChangepointResultContainer]: _description_
+        Iterator[BemaChangepointResultContainer]: Yields filtered result containers
     """
     for result in results:
         r = result.result
@@ -88,10 +89,10 @@ def shape(
     """Checks that certain slopes of models conform to a shape expected from building energy data.
 
     Args:
-        results (BemaChangepointResultContainers): _description_
+        results (BemaChangepointResultContainers): The results to be filtered.
 
     Yields:
-        Iterator[BemaChangepointResultContainer]: _description_
+        Iterator[BemaChangepointResultContainer]: Yields filtered result containers
     """
     for result in results:
         r = result.result
@@ -158,10 +159,10 @@ def tstat(
     """Determines if slopes are statistically significant relevant to one another.
 
     Args:
-        results (BemaChangepointResultContainers): _description_
+        results (BemaChangepointResultContainers): The results to be filtered.
 
     Yields:
-        Iterator[BemaChangepointResultContainer]: _description_
+        Iterator[BemaChangepointResultContainer]: Yields filtered result containers
     """
     for result in results:
         r = result.result

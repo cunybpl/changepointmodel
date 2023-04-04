@@ -1,3 +1,8 @@
+"""A standard set of configurations built using `changepointmodel.core`. This module exposes 
+a single method called `get_changepoint_model_pair` which will deliver a changepointmodel and its 
+correctly configured load aggregator.
+"""
+
 from changepointmodel.core import pmodels, loads
 from changepointmodel.core.calc import models as cpmodels
 from changepointmodel.core.calc import bounds as cpbounds
@@ -5,7 +10,7 @@ from changepointmodel.core.estimator import EnergyChangepointEstimator
 from changepointmodel.core.loads import EnergyChangepointLoadsAggregator
 from changepointmodel.core.factories import EnergyModelFactory, EnergyModel
 from changepointmodel.core.pmodels import ParamaterModelCallableT, EnergyParameterModelT
-from typing import Tuple
+from typing import Tuple, Any
 
 
 # NOTE that this part of the API should be thread-safe since the underlying objects in EnergyModels that these factories
@@ -75,8 +80,6 @@ _fivep_changepoint_model = EnergyModelFactory.create(
     _fivep_load_handler,
 )
 
-from typing import Any
-
 _models: dict[str, EnergyModel[Any, Any]] = {
     "2P": _twop_changepoint_model,
     "3PC": _threepc_changepoint_model,
@@ -100,7 +103,7 @@ def get_changepoint_model_pair(
         name (str): name of the model.
 
     Returns:
-        Tuple[EnergyChangepointEstimator, EnergyChangepointLoadsAggregator]: _description_
+        Tuple[EnergyChangepointEstimator, EnergyChangepointLoadsAggregator]: The estimator and its partner load aggregator.
     """
     m = _models[name]
     return m.create_estimator(), m.create_load_aggregator()

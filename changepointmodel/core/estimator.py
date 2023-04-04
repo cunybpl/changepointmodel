@@ -1,7 +1,7 @@
 from typing import Generator, List, Optional, Tuple, Callable, Any, Union, Dict, Generic
 import numpy as np
 
-from .nptypes import NByOneNDArray, OneDimNDArray, AnyByAnyNDArray
+from .nptypes import NByOneNDArray, OneDimNDArray, AnyByAnyNDArray, Ordering
 from .pmodels import (
     ParameterModelFunction,
     ParamaterModelCallableT,
@@ -21,8 +21,20 @@ from sklearn.exceptions import NotFittedError  # type: ignore
 
 from .calc.bounds import BoundTuple, OpenBoundCallable
 
+Bounds = BoundTuple | OpenBoundCallable
+
 
 def check_not_fitted(method: Callable[..., Any]) -> Callable[..., Any]:
+    """Helper decorator to raise a not fitted error if a property of an Estimator
+    is attempted to be accessed before fit.
+
+    Args:
+        method (Callable[..., Any]): _description_
+
+    Returns:
+        Callable[..., Any]: _description_
+    """
+
     def inner(*args: Tuple[Any, ...], **kwargs: Dict[str, Any]) -> Any:
         try:
             return method(*args, **kwargs)
@@ -32,9 +44,6 @@ def check_not_fitted(method: Callable[..., Any]) -> Callable[..., Any]:
             ) from err
 
     return inner
-
-
-Bounds = BoundTuple | OpenBoundCallable
 
 
 class CurvefitEstimator(BaseEstimator, RegressorMixin):  # type: ignore
@@ -140,12 +149,40 @@ class EnergyChangepointEstimator(BaseEstimator, RegressorMixin, Generic[Paramate
             ParameterModelFunction[ParamaterModelCallableT, EnergyParameterModelT]
         ] = model
 
+        self._original_ordering: Optional[Ordering] = None
+
     @classmethod
     def sort_X_y(
         cls, X: NByOneNDArray[np.float64], y: OneDimNDArray[np.float64]
     ) -> Tuple[AnyByAnyNDArray[np.float64], OneDimNDArray[np.float64]]:
-        X, y, _ = argsort_1d_idx(X, y)  # type: ignore
+        """Helper to sort y in terms of X together for changepoint modeling.
+
+        Args:
+            X (NByOneNDArray[np.float64]): The X array
+            y (OneDimNDArray[np.float64]): The y array
+
+        Returns:
+            Tuple[AnyByAnyNDArray[np.float64], OneDimNDArray[np.float64]]: The reordered X and y
+        """
+        X, y, _ = argsort_1d_idx(X, y)
         return X, y
+
+    @classmethod
+    def sort_X_y_idx(
+        cls, X: NByOneNDArray[np.float64], y: OneDimNDArray[np.float64]
+    ) -> Tuple[AnyByAnyNDArray[np.float64], OneDimNDArray[np.float64], Ordering]:
+        """A helper to sort y in terms of X together for changepoint modeling. Also returns the
+        ordering index that can be assigned to original_ordering field in the estimator or held for later use.
+
+        Args:
+            X (NByOneNDArray[np.float64]): _description_
+            y (OneDimNDArray[np.float64]): _description_
+
+        Returns:
+            Tuple[AnyByAnyNDArray[np.float64], OneDimNDArray[np.float64], Ordering]: _description_
+        """
+        X, y, order = argsort_1d_idx(X, y)
+        return X, y, order
 
     @classmethod
     def fit_many(
@@ -339,3 +376,11 @@ class EnergyChangepointEstimator(BaseEstimator, RegressorMixin, Generic[Paramate
     @check_not_fitted
     def len_y(self) -> int:
         return len(self.estimator_.y_)  # type: ignore
+
+    @property
+    def original_ordering(self) -> Optional[Ordering]:
+        return self._original_ordering
+
+    @original_ordering.setter
+    def original_ordering(self, o: Ordering) -> None:
+        self._original_ordering = o

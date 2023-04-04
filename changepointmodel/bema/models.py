@@ -1,7 +1,10 @@
 """ 
-TODO: description 
+A set of pydantic models for validating input, output and configuration options. 
 
-XXX many of the parse methods should be marked as protected and better documented
+The "Result" models come equipped with various methods for parsing and flattening the inner result 
+data into python primitives. These can be used to insert into databases or write to disk. 
+
+TODO many of the parse methods should be marked as protected and better documented
 """
 
 from changepointmodel.core.nptypes import (
@@ -12,29 +15,36 @@ from changepointmodel.core.nptypes import (
 import pydantic
 from typing import List, Optional, Union, Any, Dict, Tuple, Annotated
 import numpy as np
-from changepointmodel.core.schemas import NpConfig, CurvefitEstimatorDataModel
+from changepointmodel.core.schemas import NpConfig
 from pydantic import Field
 import enum
 
 
 SklScoreReturnType = Union[float, AnyByAnyNDArrayField, Any]
-
 GenericRecords = List[Dict[str, Any]]
 
 
-# can be moved into a separate module when we have main bema model package or something
 class FilterHowEnum(enum.Enum):
+    """How to filter your models. Details can be found in `changepointmodel.bema.filter_`."""
+
     best_score = "best_score"
     threshold_ok = "threshold_ok"
     threshold_ok_first_is_best = "threshold_ok_first_is_best"
 
 
 class FilterWhichEnum(enum.Enum):
+    """Which score to use to filter your models. Details can be found in `changepointmodel.bema.filter_`."""
+
     r2 = "r2"
     cvrmse = "cvrmse"
 
 
 class UsageTemperatureData(pydantic.BaseModel):
+    """Provide the oat and usage data for energy changepointmodel modeling. We validate on array size and
+    shape. This is timescale agnostic but both oat and usage must be the same size.
+
+    """
+
     oat: List[float] = Field(
         ...,
         description="Outside air temperature for changepoint regression. Should be same len as usage.",
@@ -60,6 +70,10 @@ class UsageTemperatureData(pydantic.BaseModel):
 
 
 class FilterConfig(pydantic.BaseModel):
+    """Filter configuration options. While this is entirely optional it is useful especially for
+    batch processing. Details for how filtering works can be found in `changepointmodel.bema.filter_` module.
+    """
+
     which: FilterWhichEnum = Field(
         default=FilterWhichEnum.r2, description="Filter on r2 or cvrmse value."
     )
@@ -78,6 +92,11 @@ Threshold = Annotated[float, pydantic.confloat(ge=0, le=1)]
 
 # filtered to calcuale savings, but return all the models
 class ChangepointModelConfig(pydantic.BaseModel):
+    """Which models to attempt to run and what scores to report on. We do not filter without an explicit
+    FilterConfig object. Note that the order of models will affect the filtering results if the option is
+    given as `threshold_ok_first_is_best`.
+    """
+
     models: List[str] = Field(
         ..., description="Model types to attempt. Options are 5P, 4P, 3PC, 3PH, 2P."
     )
@@ -100,6 +119,11 @@ class ChangepointModelConfig(pydantic.BaseModel):
 
 
 class EnergyChangepointModelRequest(pydantic.BaseModel):
+    """This is the top level request object. A non-zero threshold is provided to validate
+    whether there are enough points to model. Note that we also do not accept
+    NULL or NaN values for X or y data since it will cause modeling errors in scipy.
+    """
+
     nonzero_threshold: Threshold = Field(
         0.8,
         description="Threshold for percent of number of non-zero input data points.",
@@ -129,6 +153,12 @@ class EnergyChangepointModelRequest(pydantic.BaseModel):
 
 
 class BaselineChangepointModelRequest(EnergyChangepointModelRequest):
+    """A subclass of EnergyChangepointmodel request that accepts normalized data. Note that
+    we will accept monthly(12), hourly(24) or daily(365) points for this field. It should be the same
+    timescale as X and y data that you wish to model. We do not validate this aspect of modeling. It is up
+    to the user to make sure their data is correct before trying to model.
+    """
+
     norms: Optional[List[float]] = Field(
         None,
         description="Optional normalized outside air temperature data. Used to calculate NAC. Length can be 12 (monthly), 365 (daily) or 24 (hourly).",
@@ -148,6 +178,20 @@ Scalar = Annotated[float, pydantic.confloat(ge=1.0)]
 
 
 class SavingsRequest(pydantic.BaseModel):
+    """A request for option-c savings. It is essentially composed of 2 EnergyChangepointModelRequsts, one for pre and post.
+
+    For this application we do our best to validate that you are strictly conforming to monthly aggregates by checking for 12 pre and post
+    points. This is to assure that the resulting savings calculations will produce the correct values since they are tuned specifically
+    for monthly calculations. If a more timescale agnostic approach to performing these calculations is determined we will
+    design a more robust savings request.
+
+    The Ashrae calculations themselves can be found in `changepointmodel.core.calc.savings` and `changepointmodel.core.calc.uncertainties`.
+    We were careful to site references when we developed the library.
+
+    The confidence interval for savings calculations is given here as well as scalar. The scalar is mainly used to assure that any
+    per/day values which are common are scaled back out. We default this to 30.473 which is an often used approximation for a month.
+    """
+
     pre: EnergyChangepointModelRequest = Field(
         ..., description="The pre-retrofit data for this option-c request."
     )
@@ -184,10 +228,9 @@ class SavingsRequest(pydantic.BaseModel):
         return v
 
 
-# cpmodel results with parser methods
-
-
 class PredictedSum(pydantic.BaseModel):
+    """The return value calculated for normalized annual consumption."""
+
     value: float
 
     def parse(self) -> Dict[str, Union[float, str]]:
@@ -200,6 +243,8 @@ class PredictedSum(pydantic.BaseModel):
 
 
 class Load(pydantic.BaseModel):
+    """Base heating and cooling loads for each model."""
+
     base: float
     heating: float
     cooling: float
@@ -217,6 +262,10 @@ class Load(pydantic.BaseModel):
 
 
 class EnergyParameterModelCoefficients(pydantic.BaseModel):
+    """The model parameters determined from curve_fit. Since 2P models do not have changepoints this
+    value may be None.
+    """
+
     yint: float
     slopes: List[float]
     changepoints: Optional[List[float]]
@@ -307,6 +356,8 @@ class EnergyParameterModelCoefficients(pydantic.BaseModel):
 
 
 class Score(pydantic.BaseModel):
+    """Holds onto the score values for r2 and cvrmse."""
+
     name: str
     value: float
     threshold: float
@@ -330,6 +381,8 @@ class Score(pydantic.BaseModel):
 
 
 class EnergyChangepointModelInputData(pydantic.BaseModel):
+    """We return the original input data in a more stripped down manner."""
+
     X: OneDimNDArrayField
     y: OneDimNDArrayField
 
@@ -338,6 +391,8 @@ class EnergyChangepointModelInputData(pydantic.BaseModel):
 
 
 class EnergyChangepointModelResult(pydantic.BaseModel):
+    """A result object for a single changepointmodel."""
+
     name: str
     coeffs: EnergyParameterModelCoefficients
     pred_y: OneDimNDArrayField
@@ -349,68 +404,11 @@ class EnergyChangepointModelResult(pydantic.BaseModel):
     class Config(NpConfig):
         ...
 
-    def parse_input_data(self) -> Dict[str, List[float]]:
-        return self.input_data.get_Xy_as_oat_usage()
-
-    def get_scores(self) -> Dict[str, float]:  # {r2: 42, cvrmse: 42}
-        """Needed for top level changepointmodel result.
-
-        Returns:
-            Dict[str, float]: _description_
-        """
-        out = {}
-        for score in self.scores:
-            name, val = score.parse()
-            out[name] = val
-        return out
-
     def _parse_scores_for_csv(self) -> Dict[str, Any]:
         out: Dict[str, Any] = {}
         for score in self.scores:
             res = score.parse_for_csv()
             out = {**out, **res}
-        return out
-
-    def make_cp_model_result(self) -> Dict[str, Any]:
-        """method to make cpmodel results for bemadb changepointmodelresult table.
-
-        Returns:
-            _type_: dict representation of changepointmodelresult db schemas
-        """
-        cpmodel = self.dict(exclude={"input_data", "pred_y"})
-        cpmodel[
-            "pred_y"
-        ] = (
-            self.pred_y.tolist()
-        )  # manual conversion to list here since it may not be properly serialized to JSON in some cases
-        cpmodel["input_data"] = self.parse_input_data()
-        return {
-            **self.get_scores(),
-            "modeltype": self.name,
-            "result": {"cpmodel": cpmodel},
-        }
-
-    # call this for database to get measurements
-    def get_cpmodelmeasurements(
-        self, add_model_type: bool = False
-    ) -> List[Dict[str, Union[float, str]]]:
-        """Parse and merge all valid cpmodelmeasurements for this result.
-            Can be used for writing output into bemadb changepointmodelmeasurement table. For writing output
-            directly to db, set add_model_type to False.
-
-        Args:
-            add_model_type (bool, optional): Add model type to measurements result. Defaults to False.
-
-        Returns:
-            List[Dict[str, Union[float, str]]]: dict representation of changepointmodelmeasurement db schemas
-        """
-        out = []
-        out.extend(self.load.parse())  # loads
-        out.extend(self.coeffs.parse(self.name))  # cps + sensitivities
-        if self.nac is not None:  # just in case we don't have nac for some reason...
-            out.append(self.nac.parse())
-        if add_model_type:  # add modeltype for the most public
-            return [{**i, "model_type": self.name} for i in out]
         return out
 
     def _flatten_cp_model_measurements(self) -> Dict[str, Any]:
@@ -460,6 +458,67 @@ class EnergyChangepointModelResult(pydantic.BaseModel):
             else {"model_type": self.name}
         )
         return [{"predicted_usage": i, **meta_data} for i in self.pred_y]
+
+    def get_cpmodelmeasurements(
+        self, add_model_type: bool = False
+    ) -> List[Dict[str, Union[float, str]]]:
+        """Parse and merge all valid cpmodelmeasurements for this result.
+            Can be used for writing output into bemadb changepointmodelmeasurement table. For writing output
+            directly to db, set add_model_type to False.
+
+        Args:
+            add_model_type (bool, optional): Add model type to measurements result. Defaults to False.
+
+        Returns:
+            List[Dict[str, Union[float, str]]]: dict representation of changepointmodelmeasurement db schemas
+        """
+        out = []
+        out.extend(self.load.parse())  # loads
+        out.extend(self.coeffs.parse(self.name))  # cps + sensitivities
+        if self.nac is not None:  # just in case we don't have nac for some reason...
+            out.append(self.nac.parse())
+        if add_model_type:  # add modeltype for the most public
+            return [{**i, "model_type": self.name} for i in out]
+        return out
+
+    def parse_input_data(self) -> Dict[str, List[float]]:
+        """Parse the InputData object as oat/usage.
+
+        Returns:
+            Dict[str, List[float]]: The oat/usage pair.
+        """
+        return self.input_data.get_Xy_as_oat_usage()
+
+    def get_scores(self) -> Dict[str, float]:  # {r2: 42, cvrmse: 42}
+        """Needed for top level changepointmodel result.
+
+        Returns:
+            Dict[str, float]: Scores
+        """
+        out = {}
+        for score in self.scores:
+            name, val = score.parse()
+            out[name] = val
+        return out
+
+    def make_cp_model_result(self) -> Dict[str, Any]:
+        """method to make cpmodel results for bemadb changepointmodelresult table.
+
+        Returns:
+            _type_: dict representation of changepointmodelresult db schemas
+        """
+        cpmodel = self.dict(exclude={"input_data", "pred_y"})
+        cpmodel[
+            "pred_y"
+        ] = (
+            self.pred_y.tolist()
+        )  # manual conversion to list here since it may not be properly serialized to JSON in some cases
+        cpmodel["input_data"] = self.parse_input_data()
+        return {
+            **self.get_scores(),
+            "modeltype": self.name,
+            "result": {"cpmodel": cpmodel},
+        }
 
 
 class AdjustedSavingsResult(pydantic.BaseModel):
@@ -556,6 +615,8 @@ class NormalizedSavingsResult(pydantic.BaseModel):
 
 
 class AdjustedSavingsResultData(pydantic.BaseModel):
+    """An adjusted savings result."""
+
     confidence_interval: float
     result: AdjustedSavingsResult
 
@@ -564,6 +625,8 @@ class AdjustedSavingsResultData(pydantic.BaseModel):
 
 
 class NormalizedSavingsResultData(pydantic.BaseModel):
+    """A normalized savings result"""
+
     confidence_interval: float
     result: NormalizedSavingsResult
 
@@ -572,6 +635,8 @@ class NormalizedSavingsResultData(pydantic.BaseModel):
 
 
 class SavingsResult(pydantic.BaseModel):
+    """A single savings result object."""
+
     pre: EnergyChangepointModelResult
     post: EnergyChangepointModelResult
     adjusted_savings: AdjustedSavingsResultData
@@ -668,6 +733,8 @@ class SavingsResult(pydantic.BaseModel):
 
 
 class EnergyChangepointModelResponse(pydantic.BaseModel):
+    """A list of changepointmodel results."""
+
     results: List[EnergyChangepointModelResult]
 
     class Config(NpConfig):
@@ -697,6 +764,8 @@ class EnergyChangepointModelResponse(pydantic.BaseModel):
 
 
 class SavingsResponse(pydantic.BaseModel):
+    """A list of savings results."""
+
     results: List[SavingsResult]
 
     class Config(NpConfig):

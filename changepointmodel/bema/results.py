@@ -32,8 +32,9 @@ class BemaChangepointResult(object):
         nac: Optional[PredictedSumCalculator],
     ) -> EnergyChangepointModelResult:
         # XXX change this access to public #67
-        original_ordering = estimator._original_ordering
-        assert estimator.model is not None
+        original_ordering = estimator.original_ordering
+        assert original_ordering is not None, "original ordering is None"
+        assert estimator.model is not None, "estimator model is None"
 
         data = {
             "name": estimator.name,
@@ -66,7 +67,9 @@ class BemaSavingsResult(object):
     ) -> SavingsResult:
         result = adjcalc.save(pre.estimator, post.estimator)
 
-        ordering = post.estimator._original_ordering
+        ordering = post.estimator.original_ordering
+        assert ordering is not None, "ordering is None."
+
         result.adjusted_y = unargsort_1d_idx(result.adjusted_y, ordering)
 
         adj = AdjustedSavingsResultData(

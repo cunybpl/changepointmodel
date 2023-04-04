@@ -115,7 +115,7 @@ class CoolingLoad(ISensitivityLoad):
             changepoint (Optional[float], optional): The cooling changepoint. Defaults to None.
 
         Returns:
-            float: [description]
+            float: The cooling load
         """
         if slope < 0:  # neg slope no cool
             return 0
@@ -187,12 +187,12 @@ class TwoParameterLoadHandler(AbstractLoadHandler[TwoParameterModel]):
         """Calculate a two parameter load.
 
         Args:
-            X (OneDimNDArray): [description]
-            pred_y (OneDimNDArray): [description]
-            coeffs (EnergyParameterModelCoefficients): [description]
+            X (OneDimNDArray): The X array.
+            pred_y (OneDimNDArray): The predicted y vals
+            coeffs (EnergyParameterModelCoefficients): The coefficients for the energy model.
 
         Returns:
-            Load: [description]
+            Load: A Load calculation.
         """
         yint, total_pred_y = self._initial(pred_y, coeffs)
 
@@ -214,9 +214,9 @@ class ThreeParameterLoadHandler(AbstractLoadHandler[ThreeParameterModel]):
         """Calculate a three parameter (heating or cooling) load.
 
         Args:
-            X (OneDimNDArray): The X array of the model.
-            pred_y (OneDimNDArray): The predicted y array of the
-            coeffs (EnergyParameterModelCoefficients): [description]
+            X (OneDimNDArray): The X array.
+            pred_y (OneDimNDArray): The predicted y vals
+            coeffs (EnergyParameterModelCoefficients): The coefficients for the energy model.
 
         Returns:
             Load: A load calculation.
@@ -244,9 +244,9 @@ class FourParameterLoadHandler(AbstractLoadHandler[FourParameterModel]):
         """Calculate a FourParameterLoad.
 
         Args:
-            X (OneDimNDArray): [description]
-            pred_y (OneDimNDArray): [description]
-            coeffs (EnergyParameterModelCoefficients): [description]
+            X (OneDimNDArray): The X array.
+            pred_y (OneDimNDArray): The predicted y vals
+            coeffs (EnergyParameterModelCoefficients): The coefficients for the energy model.
 
         Returns:
             Load: A Load calculation.
@@ -275,12 +275,12 @@ class FiveParameterLoadHandler(AbstractLoadHandler[FiveParameterModel]):
         """Calculate a FiveParameterLoad
 
         Args:
-            X (NByOneNDArray): [description]
-            pred_y (OneDimNDArray): [description]
-            coeffs (EnergyParameterModelCoefficients): [description]
+            X (OneDimNDArray): The X array.
+            pred_y (OneDimNDArray): The predicted y vals
+            coeffs (EnergyParameterModelCoefficients): The coefficients for the energy model.
 
         Returns:
-            Load: [description]
+            Load: A Load calculation.
         """
 
         yint, total_pred_y = self._initial(pred_y, coeffs)

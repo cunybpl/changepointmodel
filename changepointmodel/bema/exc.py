@@ -1,10 +1,10 @@
-""" Exception wrapper for bema changepoint. fastapi will register an exception handler to deal specifically with BemaChangepointException classes to reraise as a 409 http error.
+""" Exception wrapper for bema changepoint.
 """
 from typing import Dict
 import sys
 import traceback
 
-from typing import Optional, Any
+from typing import Optional
 
 
 class BemaChangepointException(Exception):
