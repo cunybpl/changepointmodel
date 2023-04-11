@@ -27,32 +27,6 @@ from .schemas import CurvefitEstimatorDataModel
 from .scoring import R2, Rmse, Cvrmse, Scorer, ScoreEval
 from .utils import argsort_1d_idx, unargsort_1d_idx, parse_coeffs
 
-
-_loads = (
-    "EnergyChangepointLoadsAggregator",
-    "FiveParameterLoadHandler",
-    "FourParameterLoadHandler",
-    "ThreeParameterLoadHandler",
-    "TwoParameterLoadHandler",
-    "CoolingLoad",
-    "HeatingLoad",
-    "Baseload",
-)
-
-_pmodels = (
-    "TwoParameterModel",
-    "TwoParameterCoefficientParser",
-    "ThreeParameterModel",
-    "ThreeParameterCoefficientsParser",
-    "FourParameterModel",
-    "FourParameterCoefficientsParser",
-    "FiveParameterModel",
-    "FiveParameterCoefficientsParser",
-    "ParameterModelFunction",
-)
-
-_scoring = ("R2", "Rmse", "Cvrmse", "Scorer", "ScoreEval")
-
 __all__ = (
     "EnergyChangepointEstimator",
     "CurvefitEstimator",
@@ -65,7 +39,29 @@ __all__ = (
     "argsort_1d_idx",
     "unargsort_1d_idx",
     "parse_coeffs",
-    *_loads,
-    *_pmodels,
-    *_scoring,
+    # loads
+    "EnergyChangepointLoadsAggregator",
+    "FiveParameterLoadHandler",
+    "FourParameterLoadHandler",
+    "ThreeParameterLoadHandler",
+    "TwoParameterLoadHandler",
+    "CoolingLoad",
+    "HeatingLoad",
+    "Baseload",
+    # pmodels,
+    "TwoParameterModel",
+    "TwoParameterCoefficientParser",
+    "ThreeParameterModel",
+    "ThreeParameterCoefficientsParser",
+    "FourParameterModel",
+    "FourParameterCoefficientsParser",
+    "FiveParameterModel",
+    "FiveParameterCoefficientsParser",
+    "ParameterModelFunction",
+    # scoring
+    "R2",
+    "Rmse",
+    "Cvrmse",
+    "Scorer",
+    "ScoreEval",
 )

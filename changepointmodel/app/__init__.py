@@ -12,15 +12,11 @@ from .exc import bema_changepoint_exception_wrapper, ChangepointException
 from .filter_ import ChangepointEstimatorFilter
 from .extras import dpop, tstat
 
-# aliases for easier debugging; don't export
-_apps = (
+
+__all__ = (
     "run_baseline",
     "run_optionc",
-    "AppChangepointModeler",
-)
-_config = ("get_changepoint_model_pair",)
-_exceptions = ("bema_changepoint_exception_wrapper", "AppChangepointException")
-_models = (
+    "ChangepointModelerApplication",
     "BaselineChangepointModelRequest",
     "EnergyChangepointModelResponse",
     "SavingsResponse",
@@ -28,13 +24,9 @@ _models = (
     "EnergyChangepointModelResult",
     "SavingsResult",
     "EnergyChangepointModelInputData",
-)
-
-__all__ = (
-    *_apps,
-    *_models,
-    *_config,
-    *_exceptions,
+    "get_changepoint_model_pair",
+    "bema_changepoint_exception_wrapper",
+    "ChangepointException",
     "ChangepointEstimatorFilter",
     "dpop",
     "tstat",
