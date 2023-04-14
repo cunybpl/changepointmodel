@@ -23,15 +23,17 @@ def adjusted(
         pre_n (int): The number of points used to fit the pre retrofit model.
         post_n (int): The number of points userd to the fit the post retrofit model. NOTE must equal the pre_n.
         confidence_interval (float, optional): The confidence. Defaults to 0.8.
-        scalar (float, optional): Value to scale by. Use 30.437 to scale from per-day to total month!!
+        scalar (float, optional): Value to scale by. Use 30.437 to scale from per-day to total month. NOTE this is deprecated in 3.1.0a0
+            and will have no effect on the internal calculation. It is left for backwards compatibility in production.
 
     Returns:
         Tuple[float, float, float, float]: A tuple of total_savings, average_savings, percent_savings and percent_savings_uncertainity.
     """
     assert pre_n == post_n, "pre_n and post_n must be equal"
 
-    scalar = 1 if scalar is None else scalar
-    total_savings = (gross_adjusted_pred_y - gross_post_y) * scalar
+    # removed 3.1.0a0 -- removed here
+    # scalar = 1 if scalar is None else scalar
+    total_savings = gross_adjusted_pred_y - gross_post_y  # * scalar
     percent_savings = total_savings / gross_post_y
 
     fractional_savings = np.absolute(
@@ -79,7 +81,8 @@ def weather_normalized(
         post_p (int): The number of parameters in the post model.
         n_norm (int): The number of parameters in the noramlized model. Must equal pre_n and post_n.
         confidence_interval (float, optional): The confidence interval of the uncertainity calculation. Defaults to 0.8.
-        scalar (float, optional): Value to scale by. Use 30.437 to scale from per-day to total month!!
+        scalar (float, optional): Value to scale by. Use 30.437 to scale from per-day to total month. NOTE this is deprecated in 3.1
+            and will have no effect on the internal calculation. It is left for backwards compatibility in production.
 
     Returns:
         Tuple[float, float, float, float]: A tuple of total_savings, average_savings, percent_savings and percent_savings_uncertainity.
@@ -87,10 +90,11 @@ def weather_normalized(
 
     assert pre_n == post_n == n_norm, "pre_n, post_n, and n_norm must be the same"
 
-    scalar = 1 if scalar is None else scalar
+    # removed 3.1.0a0
+    # scalar = 1 if scalar is None else scalar
     total_savings = (
         gross_normalized_pred_y_pre - gross_normalized_pred_y_post
-    ) * scalar
+    )  # * scalar
     percent_savings = total_savings / gross_normalized_pred_y_pre
 
     pre_rel_unc = uncertainties.relative_uncertainty_normalized_period(

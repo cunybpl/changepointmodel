@@ -11,12 +11,12 @@ from changepointmodel.core.scoring import Scorer
 
 from changepointmodel.core.predsum import PredictedSumCalculator
 from changepointmodel.core.savings import (
-    AshraeAdjustedSavingsCalculator,
-    AshraeNormalizedSavingsCalculator,
+    AbstractAdjustedSavingsCalculator,
+    AbstractNormalizedSavingsCalculator,
 )
 
 from .base import ChangepointResultContainer
-from typing import Optional
+from typing import Optional, Generic
 
 from changepointmodel.core.pmodels import ParamaterModelCallableT, EnergyParameterModelT
 
@@ -60,8 +60,8 @@ class ChangepointSavingsResult(object):
         post: ChangepointResultContainer[
             ParamaterModelCallableT, EnergyParameterModelT
         ],
-        adjcalc: AshraeAdjustedSavingsCalculator,
-        normcalc: Optional[AshraeNormalizedSavingsCalculator] = None,
+        adjcalc: AbstractAdjustedSavingsCalculator,
+        normcalc: Optional[AbstractNormalizedSavingsCalculator] = None,
     ) -> SavingsResult:
         result = adjcalc.save(pre.estimator, post.estimator)
 

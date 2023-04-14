@@ -2,12 +2,12 @@
 """
 from dataclasses import dataclass
 import numpy as np
-from .nptypes import NByOneNDArray, OneDimNDArray, OneDimNDArrayField
+from .nptypes import NByOneNDArray, OneDimNDArray
 from .estimator import EnergyChangepointEstimator
 from .calc import savings as libsavings
 
 from .scoring import Cvrmse
-from typing import Optional
+from typing import Optional, Tuple, TypeVar
 
 import numpy.typing as npt
 
@@ -47,7 +47,7 @@ class NormalizedSavingsResult(object):
     percent_savings_uncertainty: float
 
 
-class ISavingsCalculator(abc.ABC):
+class IAdjustedSavingsCalculator(abc.ABC):
     @abc.abstractmethod
     def save(
         self,
@@ -59,7 +59,7 @@ class ISavingsCalculator(abc.ABC):
         ...
 
 
-class INormalizedCalculator(abc.ABC):
+class INormalizedSavingsCalculator(abc.ABC):
     @abc.abstractmethod
     def save(
         self,
@@ -71,7 +71,7 @@ class INormalizedCalculator(abc.ABC):
         ...
 
 
-class AbstractSavings(abc.ABC):
+class AbstractAdjustedSavingsCalculator(IAdjustedSavingsCalculator):
     def __init__(
         self, confidence_interval: float = 0.80, scalar: Optional[float] = None
     ):
@@ -93,8 +93,33 @@ class AbstractSavings(abc.ABC):
     def confidence_interval(self) -> float:
         return self._confidence_interval
 
+    @abc.abstractmethod
+    def _savings(
+        self,
+        gross_adjusted_pred_y: float,
+        gross_post_y: float,
+        pre_cvrmse: float,
+        pre_p: int,
+        pre_n: int,
+        post_n: int,
+        confidence_interval: float,
+    ) -> Tuple[float, float, float, float]:
+        """Override this method in a subclass to provide a savings calculation.
 
-class AshraeAdjustedSavingsCalculator(AbstractSavings, ISavingsCalculator):
+        Args:
+            gross_adjusted_pred_y (float): _description_
+            gross_post_y (float): _description_
+            pre_cvrmse (float): _description_
+            pre_p (int): _description_
+            pre_n (int): _description_
+            post_n (int): _description_
+            confidence_interval: _description_
+
+        Returns:
+            Tuple[float, float, float, float]: A tuple of total_savings, average_savings, percent_savings and percent_savings_uncertainity.
+        """
+        ...
+
     def save(
         self,
         pre: EnergyChangepointEstimator[ParamaterModelCallableT, EnergyParameterModelT],
@@ -123,7 +148,7 @@ class AshraeAdjustedSavingsCalculator(AbstractSavings, ISavingsCalculator):
         pre_n = pre.len_y()
         post_n = post.len_y()
 
-        savings = libsavings.adjusted(
+        savings = self._savings(
             float(gross_adjusted_y),
             float(gross_post_y),
             float(pre_cvrmse),
@@ -148,11 +173,29 @@ class AshraeAdjustedSavingsCalculator(AbstractSavings, ISavingsCalculator):
         )
 
 
-# This calculation must handle different X values. Design wise its easier to pass the X vals into the constructor.
-# This way we can pass configured objects to any factory method as opposed to passing data directly
+class AshraeAdjustedSavingsCalculator(AbstractAdjustedSavingsCalculator):
+    def _savings(
+        self,
+        gross_adjusted_pred_y: float,
+        gross_post_y: float,
+        pre_cvrmse: float,
+        pre_p: int,
+        pre_n: int,
+        post_n: int,
+        confidence_interval: float = 0.8,
+    ) -> Tuple[float, float, float, float]:
+        return libsavings.adjusted(
+            float(gross_adjusted_pred_y),
+            float(gross_post_y),
+            float(pre_cvrmse),
+            pre_p,
+            pre_n,
+            post_n,
+            self._confidence_interval,
+        )
 
 
-class AshraeNormalizedSavingsCalculator(AbstractSavings, INormalizedCalculator):
+class AbstractNormalizedSavingsCalculator(INormalizedSavingsCalculator):
     def __init__(
         self,
         X_norms: NByOneNDArray[np.float64],
@@ -166,12 +209,33 @@ class AshraeNormalizedSavingsCalculator(AbstractSavings, INormalizedCalculator):
             X_norms (NByOneNDArray): Normalized X data for pre-retrofit and post-retrofit related normalized calculation.
             confidence_interval (float, optional): The confidence interval for the uncertainity calculations. Defaults to 0.80.
         """
-        super().__init__(confidence_interval=confidence_interval, scalar=scalar)
         self._X_norms = X_norms
+        self._confidence_interval = confidence_interval
+        self._scalar = 1 if scalar is None else scalar
 
     @property
     def X_norms(self) -> NByOneNDArray[np.float64]:
         return self._X_norms
+
+    @property
+    def confidence_interval(self) -> float:
+        return self._confidence_interval
+
+    @abc.abstractmethod
+    def _savings(
+        self,
+        gross_normalized_pred_y_pre: float,
+        gross_normalized_pred_y_post: float,
+        pre_cvrmse: float,
+        post_cvrmse: float,
+        pre_n: int,
+        post_n: int,
+        pre_p: int,
+        post_p: int,
+        n_norm: int,
+        confidence_interval: float,
+    ) -> Tuple[float, float, float, float]:
+        ...
 
     def save(
         self,
@@ -192,7 +256,6 @@ class AshraeNormalizedSavingsCalculator(AbstractSavings, INormalizedCalculator):
 
         # setup
         normalized_pred_y_pre = pre.predict(self._X_norms) * self._scalar
-
         normalized_pred_y_post = post.predict(self._X_norms) * self._scalar
 
         gross_normalized_pred_y_pre = np.sum(normalized_pred_y_pre)
@@ -209,7 +272,7 @@ class AshraeNormalizedSavingsCalculator(AbstractSavings, INormalizedCalculator):
 
         n_norm = len(self._X_norms)
 
-        savings = libsavings.weather_normalized(
+        savings = self._savings(
             float(gross_normalized_pred_y_pre),
             float(gross_normalized_pred_y_post),
             float(pre_cvrmse),
@@ -236,4 +299,32 @@ class AshraeNormalizedSavingsCalculator(AbstractSavings, INormalizedCalculator):
             average_savings,
             percent_savings,
             percent_savings_uncertainty,
+        )
+
+
+class AshraeNormalizedSavingsCalculator(AbstractNormalizedSavingsCalculator):
+    def _savings(
+        self,
+        gross_normalized_pred_y_pre: float,
+        gross_normalized_pred_y_post: float,
+        pre_cvrmse: float,
+        post_cvrmse: float,
+        pre_n: int,
+        post_n: int,
+        pre_p: int,
+        post_p: int,
+        n_norm: int,
+        confidence_interval: float,
+    ) -> Tuple[float, float, float, float]:
+        return libsavings.weather_normalized(
+            gross_normalized_pred_y_pre,
+            gross_normalized_pred_y_post,
+            pre_cvrmse,
+            post_cvrmse,
+            pre_n,
+            post_n,
+            pre_p,
+            post_p,
+            n_norm,
+            confidence_interval,
         )
