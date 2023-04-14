@@ -21,7 +21,7 @@ from sklearn.exceptions import NotFittedError  # type: ignore
 
 from .calc.bounds import BoundTuple, OpenBoundCallable
 
-Bounds = BoundTuple | OpenBoundCallable
+Bounds = Union[BoundTuple, OpenBoundCallable]
 
 
 def check_not_fitted(method: Callable[..., Any]) -> Callable[..., Any]:

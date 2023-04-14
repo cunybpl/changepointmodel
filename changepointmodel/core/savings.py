@@ -191,7 +191,7 @@ class AshraeAdjustedSavingsCalculator(AbstractAdjustedSavingsCalculator):
             pre_p,
             pre_n,
             post_n,
-            self._confidence_interval,
+            confidence_interval,
         )
 
 
