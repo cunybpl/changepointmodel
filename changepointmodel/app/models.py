@@ -523,10 +523,10 @@ class EnergyChangepointModelResult(pydantic.BaseModel):
 
 class AdjustedSavingsResult(pydantic.BaseModel):
     adjusted_y: OneDimNDArrayField
-    total_savings: float
-    average_savings: float
-    percent_savings: float
-    percent_savings_uncertainty: float
+    total_savings: Optional[float]
+    average_savings: Optional[float]
+    percent_savings: Optional[float]
+    percent_savings_uncertainty: Optional[float]
 
     def parse_saving_results(
         self, pre_model_type: str, post_model_type: str
@@ -569,10 +569,10 @@ class AdjustedSavingsResult(pydantic.BaseModel):
 class NormalizedSavingsResult(pydantic.BaseModel):
     normalized_y_pre: OneDimNDArrayField
     normalized_y_post: OneDimNDArrayField
-    total_savings: float
-    average_savings: float
-    percent_savings: float
-    percent_savings_uncertainty: float
+    total_savings: Optional[float]
+    average_savings: Optional[float]
+    percent_savings: Optional[float]
+    percent_savings_uncertainty: Optional[float]
 
     def parse_saving_results(
         self, pre_model_type: str, post_model_type: str
