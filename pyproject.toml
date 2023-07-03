@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "changepointmodel"
-version = "3.1.0a2"
+version = "3.1.0a3"
 description = "Energy changepoint modeling and related methodologies"
 authors = [ "cunybpl <dev@cunybpl.org>",]
 
