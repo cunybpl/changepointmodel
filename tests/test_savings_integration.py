@@ -21,7 +21,7 @@ def test_savings_integration_with_pre_and_post(
 
     # configure correct model dependent handlers for 3pc
     parser_3pc = models.ThreeParameterCoefficientsParser()
-    threep_model = models.ThreeParameterModel()
+    threep_model = models.ThreeParameterCoolingModel()
     cooling = loads.CoolingLoad()
     heating = loads.HeatingLoad()
     load_handler_3pc = loads.ThreeParameterLoadHandler(threep_model, cooling, heating)

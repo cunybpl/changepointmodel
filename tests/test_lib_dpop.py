@@ -33,7 +33,9 @@ def test_dpop_good(dummy_result_for_filter_extra_good_for_dpop_test):
     assert result == (7, 5)
 
     result = dpop.fivep(
-        fivep_data.result.input_data.X, fivep_data.result.coeffs.changepoints
+        fivep_data.result.input_data.X,
+        fivep_data.result.coeffs.changepoints[0],
+        fivep_data.result.coeffs.changepoints[1],
     )
     assert result == (4, 5)
 
@@ -62,6 +64,8 @@ def test_dpop_bad(dummy_result_for_filter_extra_bad_for_dpop_test):
     assert result == (10, 2)
 
     result = dpop.fivep(
-        fivep_data.result.input_data.X, fivep_data.result.coeffs.changepoints
+        fivep_data.result.input_data.X,
+        fivep_data.result.coeffs.changepoints[0],
+        fivep_data.result.coeffs.changepoints[1],
     )
     assert result == (7, 5)
