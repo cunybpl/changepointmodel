@@ -1,12 +1,22 @@
 from typing import Generator, List, Optional, Tuple, Callable, Any, Union, Dict, Generic
 import numpy as np
 
-from .nptypes import NByOneNDArray, OneDimNDArray, AnyByAnyNDArray, Ordering
+from .nptypes import (
+    NByOneNDArray,
+    OneDimNDArray,
+    AnyByAnyNDArray,
+    Ordering,
+    SklScoreReturnType,
+)
 from .pmodels import (
     ParameterModelFunction,
     ParamaterModelCallableT,
     EnergyParameterModelT,
+    Load,
 )
+
+from .calc import dpop, tstat
+
 from .utils import argsort_1d_idx
 
 import numpy as np
@@ -89,7 +99,7 @@ class CurvefitEstimator(BaseEstimator, RegressorMixin):  # type: ignore
         """
         # NOTE the user defined function should handle the neccesary array manipulation (squeeze, reshape etc.)
         # pass the sklearn estimator dimensionality check
-        X, y = check_X_y(X, y)  # type: ignore
+        X, y = check_X_y(X, y)
 
         if callable(self.bounds):  # we allow bounds to be a callable
             bounds = self.bounds(X)
@@ -99,7 +109,7 @@ class CurvefitEstimator(BaseEstimator, RegressorMixin):  # type: ignore
         self.X_ = X
         self.y_ = y
 
-        popt, pcov = optimize.curve_fit(  # type: ignore
+        popt, pcov = optimize.curve_fit(
             f=self.model_func,
             xdata=X,
             ydata=y,
@@ -112,8 +122,8 @@ class CurvefitEstimator(BaseEstimator, RegressorMixin):  # type: ignore
             **self.lsq_kwargs,
         )
 
-        self.popt_ = popt  # type: ignore
-        self.pcov_ = pcov  # type: ignore
+        self.popt_ = popt
+        self.pcov_ = pcov
         self.name_ = self.model_func.__name__  # type: ignore
 
         return self
@@ -129,7 +139,7 @@ class CurvefitEstimator(BaseEstimator, RegressorMixin):  # type: ignore
             np.array: The predicted y values
         """
         check_is_fitted(self, ["popt_", "pcov_", "name_"])
-        X = check_array(X)  # type: ignore
+        X = check_array(X)
 
         return self.model_func(X, *self.popt_)  # type: ignore
 
@@ -164,7 +174,7 @@ class EnergyChangepointEstimator(BaseEstimator, RegressorMixin, Generic[Paramate
         Returns:
             Tuple[AnyByAnyNDArray[np.float64], OneDimNDArray[np.float64]]: The reordered X and y
         """
-        X, y, _ = argsort_1d_idx(X, y)  # type: ignore
+        X, y, _ = argsort_1d_idx(X, y)
         return X, y
 
     @classmethod
@@ -181,7 +191,7 @@ class EnergyChangepointEstimator(BaseEstimator, RegressorMixin, Generic[Paramate
         Returns:
             Tuple[AnyByAnyNDArray[np.float64], OneDimNDArray[np.float64], Ordering]: _description_
         """
-        X, y, order = argsort_1d_idx(X, y)  # type: ignore
+        X, y, order = argsort_1d_idx(X, y)
         return X, y, order
 
     @classmethod
@@ -208,7 +218,7 @@ class EnergyChangepointEstimator(BaseEstimator, RegressorMixin, Generic[Paramate
         None,
     ]:
         if sort:
-            X, y = cls.sort_X_y(X, y)  # type: ignore
+            X, y = cls.sort_X_y(X, y)
 
         for m in models:
             est = cls(m)
@@ -248,7 +258,7 @@ class EnergyChangepointEstimator(BaseEstimator, RegressorMixin, Generic[Paramate
             Optional[AbstractEnergyParameterModel]: [description]
         """
         if sort:
-            X, y = cls.sort_X_y(X, y)  # type: ignore
+            X, y = cls.sort_X_y(X, y)
 
         est = cls(model)
         try:
@@ -388,36 +398,36 @@ class EnergyChangepointEstimator(BaseEstimator, RegressorMixin, Generic[Paramate
     # --- added below methods for 3.1
     # TODO need types
     @check_not_fitted
-    def r2(self):
+    def r2(self) -> SklScoreReturnType:
         assert self.model is not None
         return self.model.r2(self.y, self.pred_y)
 
     @check_not_fitted
-    def rmse(self):
+    def rmse(self) -> SklScoreReturnType:
         assert self.model is not None
         return self.model.rmse(self.y, self.pred_y)
 
     @check_not_fitted
-    def cvrmse(self):
+    def cvrmse(self) -> SklScoreReturnType:
         assert self.model is not None
         return self.model.cvrmse(self.y, self.pred_y)
 
     @check_not_fitted
-    def dpop(self):
+    def dpop(self) -> dpop.HeatingCoolingPoints:
         assert self.model is not None
         return self.model.dpop(self.X, self.coeffs)
 
     @check_not_fitted
-    def tstat(self):
+    def tstat(self) -> tstat.HeatingCoolingTStatResult:
         assert self.model is not None
         return self.model.tstat(self.X, self.y, self.pred_y, self.coeffs)
 
     @check_not_fitted
-    def shape(self):
+    def shape(self) -> bool:
         assert self.model is not None
         return self.model.shape(self.coeffs)
 
     @check_not_fitted
-    def load(self):
+    def load(self) -> Load:
         assert self.model is not None
         return self.model.load(self.X, self.pred_y, self.coeffs)

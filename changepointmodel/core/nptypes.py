@@ -16,6 +16,8 @@ AnyByAnyNDArray = npt.NDArray[Dtype]
 NByOneNDArray = Annotated[npt.NDArray[Dtype], Literal["N", 1]]
 OneDimNDArray = Annotated[npt.NDArray[Dtype], Literal[1]]
 
+SklScoreReturnType = Union[float, OneDimNDArray[np.float64]]
+
 
 class AnyByAnyNDArrayField(np.ndarray):  # type: ignore
     @classmethod
