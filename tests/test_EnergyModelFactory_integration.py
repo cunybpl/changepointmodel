@@ -71,7 +71,7 @@ def test_integration_with_3pc(generated_3pc_data):
 
     # configure correct model dependent handlers
     parser = models.ThreeParameterCoefficientsParser()
-    threep_model = models.ThreeParameterModel()
+    threep_model = models.ThreeParameterCoolingModel()
     cooling = loads.CoolingLoad()
     heating = loads.HeatingLoad()
     load_handler = loads.ThreeParameterLoadHandler(threep_model, cooling, heating)
@@ -129,7 +129,7 @@ def test_integration_with_3ph(generated_3ph_data):
 
     # configure correct model dependent handlers
     parser = models.ThreeParameterCoefficientsParser()
-    threep_model = models.ThreeParameterModel()
+    threep_model = models.ThreeParameterHeatingModel()
     cooling = loads.CoolingLoad()
     heating = loads.HeatingLoad()
     load_handler = loads.ThreeParameterLoadHandler(threep_model, cooling, heating)
