@@ -385,11 +385,8 @@ class EnergyChangepointEstimator(BaseEstimator, RegressorMixin, Generic[Paramate
     def original_ordering(self, o: Ordering) -> None:
         self._original_ordering = o
 
-
-# handles extension methods in pmodel and overrides for fit_one and fit_many for 3.1
-class EnergyChangepointEstimatorExt(
-    EnergyChangepointEstimator[ParamaterModelCallableT, EnergyParameterModelT]
-):
+    # --- added below methods for 3.1
+    # TODO need types
     @check_not_fitted
     def r2(self):
         assert self.model is not None

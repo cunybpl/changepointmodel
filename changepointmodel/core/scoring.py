@@ -4,8 +4,8 @@ can be used on their own.
 
 import abc
 from dataclasses import dataclass
-from .nptypes import AnyByAnyNDArrayField, OneDimNDArray
-from typing import Any, Callable, List, TypeVar, Union
+from .nptypes import OneDimNDArray
+from typing import Any, List, Union
 from .calc import metrics
 from .estimator import EnergyChangepointEstimator
 from .pmodels import ParamaterModelCallableT, EnergyParameterModelT
