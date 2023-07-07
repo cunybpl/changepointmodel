@@ -7,7 +7,12 @@ from typing import List, Tuple, Union, TypeVar, Generic, Callable, Optional
 from .nptypes import NByOneNDArray, OneDimNDArray
 import numpy as np
 
+from .calc import tstat, dpop
+from .calc import metrics
+from .calc import loads
+
 from typing_extensions import Protocol
+
 
 Bound = Tuple[Tuple[float, ...], Tuple[float, ...]]
 
@@ -49,15 +54,39 @@ class EnergyParameterModelCoefficients(object):
     changepoints: List[float] = dataclasses.field(default_factory=lambda: [])
 
 
+class YinterceptMixin(object):
+    def yint(self, coeffs: EnergyParameterModelCoefficients) -> float:
+        return coeffs.yint
+
+
 class ICoefficientParser(object):
     @abc.abstractmethod
     def parse(self, coeffs: Tuple[float, ...]) -> EnergyParameterModelCoefficients:
         ...
 
 
-class YinterceptMixin(object):
-    def yint(self, coeffs: EnergyParameterModelCoefficients) -> float:
-        return coeffs.yint
+class TwoParameterCoefficientParser(ICoefficientParser):
+    def parse(self, coeffs: Tuple[float, ...]) -> EnergyParameterModelCoefficients:
+        yint, slope = coeffs
+        return EnergyParameterModelCoefficients(yint, [slope], [])
+
+
+class ThreeParameterCoefficientsParser(ICoefficientParser):
+    def parse(self, coeffs: Tuple[float, ...]) -> EnergyParameterModelCoefficients:
+        yint, slope, changepoint = coeffs
+        return EnergyParameterModelCoefficients(yint, [slope], [changepoint])
+
+
+class FourParameterCoefficientsParser(ICoefficientParser):
+    def parse(self, coeffs: Tuple[float, ...]) -> EnergyParameterModelCoefficients:
+        yint, ls, rs, changepoint = coeffs
+        return EnergyParameterModelCoefficients(yint, [ls, rs], [changepoint])
+
+
+class FiveParameterCoefficientsParser(ICoefficientParser):
+    def parse(self, coeffs: Tuple[float, ...]) -> EnergyParameterModelCoefficients:
+        yint, ls, rs, lcp, rcp = coeffs
+        return EnergyParameterModelCoefficients(yint, [ls, rs], [lcp, rcp])
 
 
 class ISingleSlopeModel(abc.ABC):
@@ -92,46 +121,297 @@ class IDualChangepointModel(abc.ABC):
         ...
 
 
-class ISingleSlopeYinterceptModel(ISingleSlopeModel, YinterceptMixin):
+class ISingleSlopeSingleChangepointModel(ISingleSlopeModel, ISingleChangepointModel):
     ...
 
 
-class ISingleSlopeSingleChangepointModel(
-    ISingleSlopeModel, ISingleChangepointModel, YinterceptMixin
+class IDualSlopeSingleChangepointModel(IDualSlopeModel, ISingleChangepointModel):
+    ...
+
+
+class IDualSlopeDualChangepointModel(IDualSlopeModel, IDualChangepointModel):
+    ...
+
+
+# extension interface for Tstat
+class ITStatMixin(abc.ABC):
+    @abc.abstractmethod
+    def tstat(
+        self,
+        X: OneDimNDArray[np.float64],
+        y: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
+        coeffs: EnergyParameterModelCoefficients,
+    ) -> tstat.HeatingCoolingTStatResult:
+        ...
+
+
+# We can use 1 Dpop mixin since there is 1 return type.
+class IDataPopMixin(abc.ABC):
+    @abc.abstractmethod
+    def dpop(
+        self,
+        X: OneDimNDArray[np.float64],
+        coeffs: EnergyParameterModelCoefficients,
+    ) -> dpop.HeatingCoolingPoints:
+        ...
+
+
+# Shape test has... 4 arg implementations ...  1 return type (bool) ...
+class IShapeTestMixin(abc.ABC):
+    @abc.abstractmethod
+    def shape(self, coeffs: EnergyParameterModelCoefficients) -> bool:
+        ...
+
+
+class R2MetricMixin(object):
+    def r2(
+        self,
+        y: OneDimNDArray[np.float64],
+        y_pred: OneDimNDArray[np.float64],
+    ) -> Union[float, OneDimNDArray[np.float64]]:
+        return metrics.r2_score(y, y_pred)
+
+
+class RmseMetricMixin(object):
+    def rmse(
+        self,
+        y: OneDimNDArray[np.float64],
+        y_pred: OneDimNDArray[np.float64],
+    ) -> Union[float, OneDimNDArray[np.float64]]:
+        return metrics.rmse(y, y_pred)
+
+
+class CvRmseMetricMixin(object):
+    def cvrmse(
+        self,
+        y: OneDimNDArray[np.float64],
+        y_pred: OneDimNDArray[np.float64],
+    ) -> Union[float, OneDimNDArray[np.float64]]:
+        return metrics.cvrmse(y, y_pred)
+
+
+class AllMetricsMixin(
+    R2MetricMixin,
+    CvRmseMetricMixin,
+    RmseMetricMixin,
 ):
     ...
 
 
-class IDualSlopeSingleChangepointModel(
-    IDualSlopeModel, ISingleChangepointModel, YinterceptMixin
+@dataclasses.dataclass
+class Load(object):
+    base: float
+    heating: float
+    cooling: float
+
+
+class ILoad(abc.ABC):
+    def _base(self, total_consumption: float, *loads_: float) -> float:
+        return loads.baseload(total_consumption, *loads_)
+
+    def _heating(
+        self,
+        X: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
+        slope: float,
+        yint: float,
+        changepoint: Optional[float] = None,
+    ) -> float:
+        if slope > 0:  # pos slope no heat
+            return 0
+
+        # no changepoint then set to inf  (handles linear model loads)
+        if changepoint is None:
+            changepoint = np.inf
+
+        return loads.heatload(X, pred_y, yint, changepoint)
+
+    def _cooling(
+        self,
+        X: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
+        slope: float,
+        yint: float,
+        changepoint: Optional[float] = None,
+    ) -> float:
+        if slope < 0:  # neg slope no cool
+            return 0
+
+        if changepoint is None:  # no cp then set to -inf (handles linear model loads)
+            changepoint = -np.inf
+
+        return loads.coolingload(X, pred_y, yint, changepoint)
+
+    @abc.abstractmethod
+    def load(
+        self,
+        X: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
+        coeffs: EnergyParameterModelCoefficients,
+    ) -> Load:
+        ...
+
+
+# NOTE that calls to slope and changepoint can work internally by return EnergyParameterModelCoefficients.
+# so coeffs parser would be used internally(model specific calcs) and externally (reporting from Estimator)
+class AbstractEnergyParameterModel(
+    AllMetricsMixin,
+    IShapeTestMixin,
+    IDataPopMixin,
+    ITStatMixin,
+    YinterceptMixin,
+    ILoad,
 ):
     ...
 
 
-class IDualSlopeDualChangepointModel(
-    IDualSlopeModel, IDualChangepointModel, YinterceptMixin
+class TwoParameterModel(
+    AbstractEnergyParameterModel,
+    ISingleSlopeModel,
 ):
-    ...
-
-
-class AbstractEnergyParameterModel(abc.ABC):
-    ...  # essentially a namespace
-
-
-class TwoParameterModel(ISingleSlopeYinterceptModel):
     def slope(self, coeffs: EnergyParameterModelCoefficients) -> float:
         return coeffs.slopes[0]
 
+    def tstat(
+        self,
+        X: OneDimNDArray[np.float64],
+        y: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
+        coeffs: EnergyParameterModelCoefficients,
+    ) -> tstat.HeatingCoolingTStatResult:
+        return tstat.twop(X, y, pred_y, self.slope(coeffs))
 
-class ThreeParameterModel(ISingleSlopeSingleChangepointModel):
+    def dpop(
+        self,
+        X: OneDimNDArray[np.float64],
+        coeffs: EnergyParameterModelCoefficients,
+    ) -> dpop.HeatingCoolingPoints:
+        return dpop.twop(X, self.slope(coeffs))
+
+    def shape(self, coeffs: EnergyParameterModelCoefficients) -> bool:
+        # essentially this is a no -op / constant
+        return True
+
+    def load(
+        self,
+        X: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
+        coeffs: EnergyParameterModelCoefficients,
+    ) -> Load:
+        yint = self.yint(coeffs)
+        total_pred_y = np.sum(pred_y)
+        slope = self.slope(coeffs)
+
+        heating = self._heating(X, pred_y, slope, yint)
+        cooling = self._cooling(X, pred_y, slope, yint)
+        base = self._base(float(total_pred_y), cooling, heating)
+
+        return Load(base=base, heating=heating, cooling=cooling)
+
+
+class ThreeParameterCoolingModel(
+    AbstractEnergyParameterModel,
+    ISingleSlopeSingleChangepointModel,
+):
     def slope(self, coeffs: EnergyParameterModelCoefficients) -> float:
         return coeffs.slopes[0]
 
     def changepoint(self, coeffs: EnergyParameterModelCoefficients) -> float:
         return coeffs.changepoints[0]
 
+    def tstat(
+        self,
+        X: OneDimNDArray[np.float64],
+        y: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
+        coeffs: EnergyParameterModelCoefficients,
+    ) -> tstat.HeatingCoolingTStatResult:
+        return tstat.threepc(X, y, pred_y, self.slope(coeffs), self.changepoint(coeffs))
 
-class FourParameterModel(IDualSlopeSingleChangepointModel):
+    def dpop(
+        self,
+        X: OneDimNDArray[np.float64],
+        coeffs: EnergyParameterModelCoefficients,
+    ) -> dpop.HeatingCoolingPoints:
+        return dpop.threepc(X, self.changepoint(coeffs))
+
+    def shape(self, coeffs: EnergyParameterModelCoefficients) -> bool:
+        if self.slope(coeffs) > 0:
+            return True
+        return False
+
+    def load(
+        self,
+        X: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
+        coeffs: EnergyParameterModelCoefficients,
+    ) -> Load:
+        yint = self.yint(coeffs)
+        total_pred_y = np.sum(pred_y)
+        slope = self.slope(coeffs)
+        cp = self.changepoint(coeffs)
+
+        heating = self._heating(X, pred_y, slope, yint, cp)
+        cooling = self._cooling(X, pred_y, slope, yint, cp)
+        base = self._base(float(total_pred_y), cooling, heating)
+
+        return Load(base, heating, cooling)
+
+
+class ThreeParameterHeatingModel(
+    AbstractEnergyParameterModel,
+    ISingleSlopeSingleChangepointModel,
+):
+    def slope(self, coeffs: EnergyParameterModelCoefficients) -> float:
+        return coeffs.slopes[0]
+
+    def changepoint(self, coeffs: EnergyParameterModelCoefficients) -> float:
+        return coeffs.changepoints[0]
+
+    def tstat(
+        self,
+        X: OneDimNDArray[np.float64],
+        y: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
+        coeffs: EnergyParameterModelCoefficients,
+    ) -> tstat.HeatingCoolingTStatResult:
+        return tstat.threeph(X, y, pred_y, self.slope(coeffs), self.changepoint(coeffs))
+
+    def dpop(
+        self,
+        X: OneDimNDArray[np.float64],
+        coeffs: EnergyParameterModelCoefficients,
+    ) -> dpop.HeatingCoolingPoints:
+        return dpop.threeph(X, self.changepoint(coeffs))
+
+    def shape(self, coeffs: EnergyParameterModelCoefficients) -> bool:
+        if self.slope(coeffs) < 0:
+            return True
+        return False
+
+    def load(
+        self,
+        X: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
+        coeffs: EnergyParameterModelCoefficients,
+    ) -> Load:
+        yint = self.yint(coeffs)
+        total_pred_y = np.sum(pred_y)
+        slope = self.slope(coeffs)
+        cp = self.changepoint(coeffs)
+
+        heating = self._heating(X, pred_y, slope, yint, cp)
+        cooling = self._cooling(X, pred_y, slope, yint, cp)
+        base = self._base(float(total_pred_y), cooling, heating)
+
+        return Load(base, heating, cooling)
+
+
+class FourParameterModel(
+    AbstractEnergyParameterModel,
+    IDualSlopeSingleChangepointModel,
+):
     def left_slope(self, coeffs: EnergyParameterModelCoefficients) -> float:
         return coeffs.slopes[0]
 
@@ -141,8 +421,59 @@ class FourParameterModel(IDualSlopeSingleChangepointModel):
     def changepoint(self, coeffs: EnergyParameterModelCoefficients) -> float:
         return coeffs.changepoints[0]
 
+    def tstat(
+        self,
+        X: OneDimNDArray[np.float64],
+        y: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
+        coeffs: EnergyParameterModelCoefficients,
+    ) -> tstat.HeatingCoolingTStatResult:
+        return tstat.fourp(
+            X,
+            y,
+            pred_y,
+            self.left_slope(coeffs),
+            self.right_slope(coeffs),
+            self.changepoint(coeffs),
+        )
 
-class FiveParameterModel(IDualSlopeDualChangepointModel):
+    def dpop(
+        self,
+        X: OneDimNDArray[np.float64],
+        coeffs: EnergyParameterModelCoefficients,
+    ) -> dpop.HeatingCoolingPoints:
+        return dpop.fourp(X, self.changepoint(coeffs))
+
+    def shape(self, coeffs: EnergyParameterModelCoefficients) -> bool:
+        ls, rs = self.left_slope(coeffs), self.right_slope(coeffs)
+        if ls < 0 and rs > 0:  # should be V shape
+            if abs(ls) > abs(rs):  # check the magnitude of the slopes
+                return True
+        return False
+
+    def load(
+        self,
+        X: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
+        coeffs: EnergyParameterModelCoefficients,
+    ) -> Load:
+        yint = self.yint(coeffs)
+        total_pred_y = np.sum(pred_y)
+        ls = self.left_slope(coeffs)
+        rs = self.right_slope(coeffs)
+        cp = self.changepoint(coeffs)
+
+        heating = self._heating(X, pred_y, ls, yint, cp)
+        cooling = self._cooling(X, pred_y, rs, yint, cp)
+        base = self._base(float(total_pred_y), cooling, heating)
+
+        return Load(base, heating, cooling)
+
+
+class FiveParameterModel(
+    AbstractEnergyParameterModel,
+    IDualSlopeDualChangepointModel,
+):
     def left_slope(self, coeffs: EnergyParameterModelCoefficients) -> float:
         return coeffs.slopes[0]
 
@@ -155,59 +486,64 @@ class FiveParameterModel(IDualSlopeDualChangepointModel):
     def right_changepoint(self, coeffs: EnergyParameterModelCoefficients) -> float:
         return coeffs.changepoints[1]
 
+    def tstat(
+        self,
+        X: OneDimNDArray[np.float64],
+        y: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
+        coeffs: EnergyParameterModelCoefficients,
+    ) -> tstat.HeatingCoolingTStatResult:
+        return tstat.fivep(
+            X,
+            y,
+            pred_y,
+            self.left_slope(coeffs),
+            self.right_slope(coeffs),
+            self.left_changepoint(coeffs),
+            self.right_changepoint(coeffs),
+        )
 
-class TwoParameterCoefficientParser(ICoefficientParser):
-    def parse(self, coeffs: Tuple[float, ...]) -> EnergyParameterModelCoefficients:
-        yint, slope = coeffs
-        return EnergyParameterModelCoefficients(yint, [slope], [])
+    def dpop(
+        self,
+        X: OneDimNDArray[np.float64],
+        coeffs: EnergyParameterModelCoefficients,
+    ) -> dpop.HeatingCoolingPoints:
+        return dpop.fivep(
+            X, self.left_changepoint(coeffs), self.right_changepoint(coeffs)
+        )
 
+    def shape(self, coeffs: EnergyParameterModelCoefficients) -> bool:
+        ls, rs = self.left_slope(coeffs), self.right_slope(coeffs)
+        if ls < 0 and rs > 0:  # should be V shape
+            if abs(ls) > abs(rs):  # check the magnitude of the slopes
+                return True
+        return False
 
-class ThreeParameterCoefficientsParser(ICoefficientParser):
-    def parse(self, coeffs: Tuple[float, ...]) -> EnergyParameterModelCoefficients:
-        yint, slope, changepoint = coeffs
-        return EnergyParameterModelCoefficients(yint, [slope], [changepoint])
+    def load(
+        self,
+        X: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
+        coeffs: EnergyParameterModelCoefficients,
+    ) -> Load:
+        yint = self.yint(coeffs)
+        total_pred_y = np.sum(pred_y)
+        ls = self.left_slope(coeffs)
+        rs = self.right_slope(coeffs)
+        lcp = self.left_changepoint(coeffs)
+        rcp = self.right_changepoint(coeffs)
 
+        cooling = self._cooling(X, pred_y, rs, yint, rcp)
+        heating = self._heating(X, pred_y, ls, yint, lcp)
+        base = self._base(float(total_pred_y), cooling, heating)
 
-class FourParameterCoefficientsParser(ICoefficientParser):
-    def parse(self, coeffs: Tuple[float, ...]) -> EnergyParameterModelCoefficients:
-        yint, ls, rs, changepoint = coeffs
-        return EnergyParameterModelCoefficients(yint, [ls, rs], [changepoint])
-
-
-class FiveParameterCoefficientsParser(ICoefficientParser):
-    def parse(self, coeffs: Tuple[float, ...]) -> EnergyParameterModelCoefficients:
-        yint, ls, rs, lcp, rcp = coeffs
-        return EnergyParameterModelCoefficients(yint, [ls, rs], [lcp, rcp])
+        return Load(base, heating, cooling)
 
 
 EnergyParameterModelT = TypeVar(
-    "EnergyParameterModelT",
-    TwoParameterModel,
-    ThreeParameterModel,
-    FourParameterModel,
-    FiveParameterModel,
+    "EnergyParameterModelT", bound=AbstractEnergyParameterModel
 )
 
-
-class ModelFunction(Generic[ParamaterModelCallableT]):
-    def __init__(
-        self, name: str, f: ParamaterModelCallableT, bounds: Union[BoundCallable, Bound]
-    ):
-        self._name = name
-        self._f: ParamaterModelCallableT = f
-        self._bounds = bounds
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def f(self) -> ParamaterModelCallableT:
-        return self._f
-
-    @property
-    def bounds(self) -> Union[BoundCallable, Bound]:
-        return self._bounds
+# a simpler loads interface that we can directly to each parameter model..
 
 
 class ParameterModelFunction(
@@ -259,3 +595,59 @@ class ParameterModelFunction(
         self, coeffs: Tuple[float, ...]
     ) -> EnergyParameterModelCoefficients:
         return self._coefficients_parser.parse(coeffs)
+
+    # XXX  v3.1
+
+    def r2(
+        self,
+        y: OneDimNDArray[np.float64],
+        y_pred: OneDimNDArray[np.float64],
+    ) -> Union[float, OneDimNDArray[np.float64]]:
+        return self._parameter_model.r2(y, y_pred)
+
+    def rmse(
+        self,
+        y: OneDimNDArray[np.float64],
+        y_pred: OneDimNDArray[np.float64],
+    ) -> Union[float, OneDimNDArray[np.float64]]:
+        return self._parameter_model.rmse(y, y_pred)
+
+    def cvrmse(
+        self,
+        y: OneDimNDArray[np.float64],
+        y_pred: OneDimNDArray[np.float64],
+    ) -> Union[float, OneDimNDArray[np.float64]]:
+        return self._parameter_model.rmse(y, y_pred)
+
+    def tstat(
+        self,
+        X: OneDimNDArray[np.float64],
+        y: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
+        coeffs: Tuple[float, ...],
+    ) -> tstat.HeatingCoolingTStatResult:
+        return self._parameter_model.tstat(X, y, pred_y, self.parse_coeffs(coeffs))
+
+    def dpop(
+        self,
+        X: OneDimNDArray[np.float64],
+        coeffs: Tuple[float, ...],
+    ) -> dpop.HeatingCoolingPoints:
+        return self._parameter_model.dpop(X, self.parse_coeffs(coeffs))
+
+    def shape(self, coeffs: Tuple[float, ...]) -> bool:
+        return self._parameter_model.shape(self.parse_coeffs(coeffs))
+
+    def load(
+        self,
+        X: OneDimNDArray[np.float64],
+        pred_y: OneDimNDArray[np.float64],
+        coeffs: Tuple[float, ...],
+    ) -> Load:
+        return self._parameter_model.load(X, pred_y, self.parse_coeffs(coeffs))
+
+
+# TODO factory methods for ParameterModelFunctionExt ... makes concrete from generic class above.
+
+
+# def twop_model(name='2P') -> ParameterModelFunction[]

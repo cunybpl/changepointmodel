@@ -11,7 +11,6 @@ from changepointmodel.core import (
 import pytest
 import numpy as np
 import json
-import random
 from typing import Optional, List, Union
 from dataclasses import dataclass
 from . import GENERATED_DATA_ALL_MODELS_FILE, GENERATED_DATA_POST, ENERGYMODEL_DATAPATH

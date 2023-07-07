@@ -4,7 +4,7 @@ import abc
 import numpy as np
 from .nptypes import OneDimNDArray
 from . import utils
-from typing import Optional, Tuple, Generic
+from typing import Optional, Tuple, Generic, TypeVar
 from .estimator import EnergyChangepointEstimator
 
 from .calc import loads as _loads
@@ -15,10 +15,17 @@ from .pmodels import (
     EnergyParameterModelCoefficients,
     ParameterModelFunction,
     TwoParameterModel,
-    ThreeParameterModel,
+    ThreeParameterCoolingModel,
+    ThreeParameterHeatingModel,
     FourParameterModel,
     FiveParameterModel,
 )
+
+# need this layer for backwards compatibility
+ThreeParameterModel = TypeVar(
+    "ThreeParameterModel", ThreeParameterCoolingModel, ThreeParameterHeatingModel
+)
+
 from dataclasses import dataclass
 
 

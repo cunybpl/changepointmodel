@@ -1,12 +1,14 @@
 import numpy as np
 import numpy.typing as npt
-from typing import Tuple, List
-from changepointmodel.core.nptypes import OneDimNDArrayField
+from typing import Tuple, Optional
+from changepointmodel.core.nptypes import OneDimNDArray
 
 # Return types
 
-SingleSlopeTStat = float
-DoubleSlopeTStat = Tuple[float, float]
+# SingleSlopeTStat = float
+# DoubleSlopeTStat = Tuple[float, float]
+
+HeatingCoolingTStatResult = Tuple[Optional[float], Optional[float]]
 
 
 # Helpers
@@ -49,90 +51,97 @@ def _get_array_left(
 
 # Main functions
 def twop(
-    X: OneDimNDArrayField,
-    Y: OneDimNDArrayField,
-    pred_y: OneDimNDArrayField,
+    X: OneDimNDArray[np.float64],
+    y: OneDimNDArray[np.float64],
+    pred_y: OneDimNDArray[np.float64],
     slope: float,
-) -> SingleSlopeTStat:
-    return slope / _std_error(X, Y, pred_y)
+) -> HeatingCoolingTStatResult:
+    tstat = slope / _std_error(X, y, pred_y)
+    if slope <= 0:
+        return tstat, None
+    else:
+        return None, tstat
 
 
 def threepc(
-    X: OneDimNDArrayField,
-    Y: OneDimNDArrayField,
-    pred_y: OneDimNDArrayField,
+    X: OneDimNDArray[np.float64],
+    y: OneDimNDArray[np.float64],
+    pred_y: OneDimNDArray[np.float64],
     slope: float,
     changepoint: float,
-) -> SingleSlopeTStat:
+) -> HeatingCoolingTStatResult:
     _x, _y, _pred_y = _get_array_right(
-        np.array(X),
-        np.array(Y),
-        np.array(pred_y),
+        X,
+        y,
+        pred_y,
         changepoint,
     )
-    return slope / _std_error(_x, _y, _pred_y)
+    return None, slope / _std_error(_x, _y, _pred_y)
 
 
 def threeph(
-    X: OneDimNDArrayField,
-    Y: OneDimNDArrayField,
-    pred_y: OneDimNDArrayField,
+    X: OneDimNDArray[np.float64],
+    y: OneDimNDArray[np.float64],
+    pred_y: OneDimNDArray[np.float64],
     slope: float,
     changepoint: float,
-) -> SingleSlopeTStat:
+) -> HeatingCoolingTStatResult:
     _x, _y, _pred_y = _get_array_left(
-        np.array(X),
-        np.array(Y),
-        np.array(pred_y),
+        X,
+        y,
+        pred_y,
         changepoint,
     )
-    return slope / _std_error(_x, _y, _pred_y)
+    return slope / _std_error(_x, _y, _pred_y), None
 
 
 def fourp(
-    X: OneDimNDArrayField,
-    Y: OneDimNDArrayField,
-    pred_y: OneDimNDArrayField,
-    slopes: List[float],
+    X: OneDimNDArray[np.float64],
+    y: OneDimNDArray[np.float64],
+    pred_y: OneDimNDArray[np.float64],
+    ls: float,
+    rs: float,
     changepoint: float,
-) -> DoubleSlopeTStat:
+) -> HeatingCoolingTStatResult:
     xl, yl, pred_yl = _get_array_left(
-        np.array(X),
-        np.array(Y),
-        np.array(pred_y),
+        X,
+        y,
+        pred_y,
         changepoint,
     )
 
     xr, yr, pred_yr = _get_array_right(
-        np.array(X), np.array(Y), np.array(pred_y), changepoint
+        np.array(X), np.array(y), np.array(pred_y), changepoint
     )
 
-    tl = slopes[0] / _std_error(xl, yl, pred_yl)
-    tr = slopes[1] / _std_error(xr, yr, pred_yr)
+    tl = ls / _std_error(xl, yl, pred_yl)
+    tr = rs / _std_error(xr, yr, pred_yr)
     return tl, tr
 
 
 def fivep(
-    X: OneDimNDArrayField,
-    Y: OneDimNDArrayField,
-    pred_y: OneDimNDArrayField,
-    slopes: List[float],
-    changepoints: List[float],
-) -> DoubleSlopeTStat:
+    X: OneDimNDArray[np.float64],
+    y: OneDimNDArray[np.float64],
+    pred_y: OneDimNDArray[np.float64],
+    ls: float,
+    rs: float,
+    lcp: float,
+    rcp: float,
+) -> HeatingCoolingTStatResult:
     xl, yl, pred_yl = _get_array_left(
-        np.array(X),
-        np.array(Y),
-        np.array(pred_y),
-        changepoints[0],
+        X,
+        y,
+        pred_y,
+        lcp,
     )
 
     xr, yr, pred_yr = _get_array_right(
         np.array(X),
-        np.array(Y),
+        np.array(y),
         np.array(pred_y),
-        changepoints[1],
+        rcp,
     )
 
-    tl = slopes[0] / _std_error(xl, yl, pred_yl)
-    tr = slopes[1] / _std_error(xr, yr, pred_yr)
+    tl = ls / _std_error(xl, yl, pred_yl)
+    tr = rs / _std_error(xr, yr, pred_yr)
     return (tl, tr)
