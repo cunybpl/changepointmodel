@@ -1,5 +1,5 @@
 from sklearn.exceptions import NotFittedError
-from changepointmodel.core.pmodels import ModelFunction, ParameterModelFunction
+from changepointmodel.core.pmodels import ParameterModelFunction
 from changepointmodel.core.estimator import CurvefitEstimator
 import numpy as np
 
@@ -19,7 +19,7 @@ def test_energychangepointestimator_fit_calls_curvefitestimator_fit(mocker):
         return (m * X + yint).squeeze()
 
     bounds = ((0, -np.inf), (np.inf, np.inf))
-    mymodel = ModelFunction("line", line, bounds)
+    mymodel = ParameterModelFunction("line", line, bounds)
 
     est = EnergyChangepointEstimator(model=mymodel)
     mock = mocker.spy(est, "fit")
@@ -38,7 +38,7 @@ def test_energychangepointestimator_properties_set_on_fit():
         return (m * X + yint).squeeze()
 
     bounds = ((0, -np.inf), (np.inf, np.inf))
-    mymodel = ModelFunction("line", line, bounds)
+    mymodel = ParameterModelFunction("line", line, bounds)
 
     X = np.linspace(1, 10, 10).reshape(-1, 1)
     y = np.linspace(1, 10, 10)
@@ -62,7 +62,7 @@ def test_estimator_calculated_getter_methods():
         return (m * X + yint).squeeze()
 
     bounds = ((0, -np.inf), (np.inf, np.inf))
-    mymodel = ModelFunction("line", line, bounds)
+    mymodel = ParameterModelFunction("line", line, bounds)
 
     X = np.linspace(1, 10, 10).reshape(-1, 1)
     y = np.linspace(1, 10, 10)
@@ -123,7 +123,7 @@ def test_estimator_fit_one():
         return (m * X + yint).squeeze()
 
     bounds = ((0, -np.inf), (np.inf, np.inf))
-    mymodel = ModelFunction("line", line, bounds)
+    mymodel = ParameterModelFunction("line", line, bounds)
 
     X = np.linspace(1, 10, 10).reshape(-1, 1)
     y = np.linspace(1, 10, 10)
@@ -142,7 +142,7 @@ def test_estimator_fit_many():
     X = np.linspace(1, 10, 10).reshape(-1, 1)
     y = np.linspace(1, 10, 10)
 
-    models = [ModelFunction(f"{i}", line, bounds) for i in range(5)]
+    models = [ParameterModelFunction(f"{i}", line, bounds) for i in range(5)]
 
     counter = 0
     for name, est in EnergyChangepointEstimator.fit_many(models, X, y):
@@ -156,7 +156,7 @@ def test_estimator_fit_one_fail_silently(mocker):
         return (m * X + yint).squeeze()
 
     bounds = ((0, -np.inf), (np.inf, np.inf))
-    mymodel = ModelFunction("line", line, bounds)
+    mymodel = ParameterModelFunction("line", line, bounds)
 
     X = np.linspace(1, 10, 10).reshape(-1, 1)
     y = np.linspace(1, 10, 10)
@@ -180,7 +180,7 @@ def test_estimator_fit_many_fail_silently(mocker):
     X = np.linspace(1, 10, 10).reshape(-1, 1)
     y = np.linspace(1, 10, 10)
 
-    models = [ModelFunction(f"{i}", line, bounds) for i in range(5)]
+    models = [ParameterModelFunction(f"{i}", line, bounds) for i in range(5)]
 
     mocker.patch.object(CurvefitEstimator, "fit", side_effect=Exception("boo"))
 
@@ -196,7 +196,7 @@ def test_estimator_adjust_calls_predict_with_other_x(mocker):
         return (m * X + yint).squeeze()
 
     bounds = ((0, -np.inf), (np.inf, np.inf))
-    mymodel = ModelFunction("line", line, bounds)
+    mymodel = ParameterModelFunction("line", line, bounds)
 
     X = np.linspace(1, 10, 10).reshape(-1, 1)
     y = np.linspace(1, 10, 10)

@@ -1,7 +1,11 @@
 import pytest
 import numpy as np
 from sklearn.model_selection import cross_val_score, cross_val_predict, GridSearchCV
-from changepointmodel.core.pmodels import ModelFunction, ParameterModelFunction
+from changepointmodel.core.pmodels import (
+    ParameterModelFunction,
+    AbstractEnergyParameterModel,
+    ICoefficientParser,
+)
 from changepointmodel.core.estimator import EnergyChangepointEstimator
 from sklearn.utils.validation import check_is_fitted
 
@@ -15,8 +19,16 @@ def test_estimator_works_with_cross_val_functions():
     def line(X, yint, m):
         return (m * X + yint).squeeze()
 
+    class LineModel(AbstractEnergyParameterModel):
+        pass
+
+    class LineCoeffParse(ICoefficientParser):
+        pass
+
     bounds = ((0, -np.inf), (np.inf, np.inf))
-    mymodel = ModelFunction("line", line, bounds)
+    mymodel = ParameterModelFunction(
+        "line", line, bounds, LineModel(), LineCoeffParse()
+    )
 
     X = np.linspace(1, 100, 100).reshape(-1, 1)
     y = np.linspace(1, 100, 100)
@@ -54,8 +66,8 @@ def test_estimator_works_with_gridsearchcv():
     X = np.linspace(1, 100, 100).reshape(-1, 1)
     y = np.linspace(1, 100, 100)
 
-    line_model = ModelFunction("line", line, bounds)
-    curve_model = ModelFunction("curve", curve, curve_bounds)
+    line_model = ParameterModelFunction("line", line, bounds)
+    curve_model = ParameterModelFunction("curve", curve, curve_bounds)
 
     grid = {"model": [line_model, curve_model]}
 

@@ -6,7 +6,8 @@ from changepointmodel.core.pmodels import (
     ParameterModelFunction,
     ParameterModelFunction,
     ThreeParameterCoefficientsParser,
-    ThreeParameterModel,
+    ThreeParameterCoolingModel,
+    ThreeParameterHeatingModel,
     TwoParameterCoefficientParser,
     TwoParameterModel,
     YinterceptMixin,
@@ -29,9 +30,16 @@ def test_twoparametermodel():
     assert model.slope(coeffs) == 99
 
 
-def test_threeparametermodel():
+def test_threeparametercoolingmodel():
     coeffs = EnergyParameterModelCoefficients(42, [99], [43])
-    model = ThreeParameterModel()
+    model = ThreeParameterCoolingModel()
+    assert model.slope(coeffs) == 99
+    assert model.changepoint(coeffs) == 43
+
+
+def test_threeparameterheatingmodel():
+    coeffs = EnergyParameterModelCoefficients(42, [99], [43])
+    model = ThreeParameterHeatingModel()
     assert model.slope(coeffs) == 99
     assert model.changepoint(coeffs) == 43
 
