@@ -56,24 +56,30 @@ def check_not_fitted(method: Callable[..., Any]) -> Callable[..., Any]:
     return inner
 
 
+import numpy as np
+
+
 class CurvefitEstimator(BaseEstimator, RegressorMixin):  # type: ignore
     def __init__(
         self,
         model_func: Optional[Callable[..., Any]] = None,
         p0: Optional[List[float]] = None,
-        bounds: Union[Bounds, OpenBoundCallable, None] = None,
+        bounds: Union[Bounds, OpenBoundCallable, Tuple[float, float], None] = (
+            -np.inf,
+            np.inf,
+        ),
         method: str = "trf",
         jac: Union[
             str, Callable[[npt.NDArray[np.float64], Any], npt.NDArray[np.float64]], None
         ] = None,
-        lsq_kwargs: Optional[Dict[str, Any]] = None,
+        lsq_kwargs: Optional[Dict[str, Any]] = {},
     ) -> None:
         self.model_func = model_func
         self.p0 = p0
         self.bounds = bounds
         self.method = method
         self.jac = jac
-        self.lsq_kwargs = lsq_kwargs if lsq_kwargs else {}
+        self.lsq_kwargs = lsq_kwargs  # if lsq_kwargs else {}
 
     def fit(
         self,
