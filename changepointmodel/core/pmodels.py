@@ -672,7 +672,7 @@ class ParameterModelFunction(
 
 
 def twop_model(
-    name="2P",
+    name: str = "2P",
 ) -> ParameterModelFunction[TwoParameterCallable, TwoParameterModel]:
     """Since v3.1 Default factory method for a twop energy model.
 
@@ -692,7 +692,7 @@ def twop_model(
 
 
 def threepc_model(
-    name="3PC",
+    name: str = "3PC",
 ) -> ParameterModelFunction[ThreeParameterCallable, ThreeParameterCoolingModel]:
     """Since v3.1 Default factory method for a threepc energy model.
 
@@ -712,7 +712,7 @@ def threepc_model(
 
 
 def threeph_model(
-    name="3PH",
+    name: str = "3PH",
 ) -> ParameterModelFunction[ThreeParameterCallable, ThreeParameterHeatingModel]:
     """Since v3.1 Default factory method for a threeph energy model.
 
@@ -732,7 +732,7 @@ def threeph_model(
 
 
 def fourp_model(
-    name="4P",
+    name: str = "4P",
 ) -> ParameterModelFunction[FourParameterCallable, FourParameterModel]:
     """Since v3.1 Default factory method for a fourp energy model.
 
@@ -752,7 +752,7 @@ def fourp_model(
 
 
 def fivep_model(
-    name="5P",
+    name: str = "5P",
 ) -> ParameterModelFunction[FiveParameterCallable, FiveParameterModel]:
     """Since v3.1 Default factory method for a fivep energy model.
 
