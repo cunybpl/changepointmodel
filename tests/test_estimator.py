@@ -1,6 +1,11 @@
 from sklearn.exceptions import NotFittedError
-from changepointmodel.core.pmodels import ParameterModelFunction
+from changepointmodel.core.pmodels import (
+    ParameterModelFunction,
+    TwoParameterModel,
+    TwoParameterCoefficientParser,
+)
 from changepointmodel.core.estimator import CurvefitEstimator
+from changepointmodel.core.calc.models import twop
 import numpy as np
 
 from numpy.testing import (
@@ -15,11 +20,10 @@ from numpy.testing import assert_array_almost_equal
 
 
 def test_energychangepointestimator_fit_calls_curvefitestimator_fit(mocker):
-    def line(X, yint, m):
-        return (m * X + yint).squeeze()
-
     bounds = ((0, -np.inf), (np.inf, np.inf))
-    mymodel = ParameterModelFunction("line", line, bounds)
+    mymodel = ParameterModelFunction(
+        "2P", twop, bounds, TwoParameterModel(), TwoParameterCoefficientParser()
+    )
 
     est = EnergyChangepointEstimator(model=mymodel)
     mock = mocker.spy(est, "fit")
@@ -34,11 +38,10 @@ def test_energychangepointestimator_fit_calls_curvefitestimator_fit(mocker):
 
 
 def test_energychangepointestimator_properties_set_on_fit():
-    def line(X, yint, m):
-        return (m * X + yint).squeeze()
-
     bounds = ((0, -np.inf), (np.inf, np.inf))
-    mymodel = ParameterModelFunction("line", line, bounds)
+    mymodel = ParameterModelFunction(
+        "2P", twop, bounds, TwoParameterModel(), TwoParameterCoefficientParser()
+    )
 
     X = np.linspace(1, 10, 10).reshape(-1, 1)
     y = np.linspace(1, 10, 10)
@@ -46,7 +49,7 @@ def test_energychangepointestimator_properties_set_on_fit():
     est = EnergyChangepointEstimator(mymodel)
     est.fit(X, y)
 
-    assert est.name == "line"
+    assert est.name == "2P"
 
     assert_array_equal(X, est.X)
     assert_array_equal(y, est.y)
@@ -58,11 +61,10 @@ def test_energychangepointestimator_properties_set_on_fit():
 
 
 def test_estimator_calculated_getter_methods():
-    def line(X, yint, m):
-        return (m * X + yint).squeeze()
-
     bounds = ((0, -np.inf), (np.inf, np.inf))
-    mymodel = ParameterModelFunction("line", line, bounds)
+    mymodel = ParameterModelFunction(
+        "2P", twop, bounds, TwoParameterModel(), TwoParameterCoefficientParser()
+    )
 
     X = np.linspace(1, 10, 10).reshape(-1, 1)
     y = np.linspace(1, 10, 10)
@@ -119,30 +121,31 @@ def test_name_accessor_raises_valueerror_if_model_not_set():
 
 
 def test_estimator_fit_one():
-    def line(X, yint, m):
-        return (m * X + yint).squeeze()
-
     bounds = ((0, -np.inf), (np.inf, np.inf))
-    mymodel = ParameterModelFunction("line", line, bounds)
+    mymodel = ParameterModelFunction(
+        "2P", twop, bounds, TwoParameterModel(), TwoParameterCoefficientParser()
+    )
 
     X = np.linspace(1, 10, 10).reshape(-1, 1)
     y = np.linspace(1, 10, 10)
 
     name, est = EnergyChangepointEstimator.fit_one(mymodel, X, y)
-    assert name == "line"
+    assert name == "2P"
     assert est.pred_y.all()  # assert that we have predictions
 
 
 def test_estimator_fit_many():
-    def line(X, yint, m):
-        return (m * X + yint).squeeze()
-
     bounds = ((0, -np.inf), (np.inf, np.inf))
 
     X = np.linspace(1, 10, 10).reshape(-1, 1)
     y = np.linspace(1, 10, 10)
 
-    models = [ParameterModelFunction(f"{i}", line, bounds) for i in range(5)]
+    models = [
+        ParameterModelFunction(
+            f"{i}", twop, bounds, TwoParameterModel(), TwoParameterCoefficientParser()
+        )
+        for i in range(5)
+    ]
 
     counter = 0
     for name, est in EnergyChangepointEstimator.fit_many(models, X, y):
@@ -152,11 +155,10 @@ def test_estimator_fit_many():
 
 
 def test_estimator_fit_one_fail_silently(mocker):
-    def line(X, yint, m):
-        return (m * X + yint).squeeze()
-
     bounds = ((0, -np.inf), (np.inf, np.inf))
-    mymodel = ParameterModelFunction("line", line, bounds)
+    mymodel = ParameterModelFunction(
+        "2P", twop, bounds, TwoParameterModel(), TwoParameterCoefficientParser()
+    )
 
     X = np.linspace(1, 10, 10).reshape(-1, 1)
     y = np.linspace(1, 10, 10)
@@ -164,7 +166,7 @@ def test_estimator_fit_one_fail_silently(mocker):
     mocker.patch.object(CurvefitEstimator, "fit", side_effect=Exception("boo"))
 
     est, name = EnergyChangepointEstimator.fit_one(mymodel, X, y)
-    assert est == "line"
+    assert est == "2P"
     assert name is None
 
     with pytest.raises(Exception):
@@ -172,15 +174,17 @@ def test_estimator_fit_one_fail_silently(mocker):
 
 
 def test_estimator_fit_many_fail_silently(mocker):
-    def line(X, yint, m):
-        return (m * X + yint).squeeze()
-
     bounds = ((0, -np.inf), (np.inf, np.inf))
 
     X = np.linspace(1, 10, 10).reshape(-1, 1)
     y = np.linspace(1, 10, 10)
 
-    models = [ParameterModelFunction(f"{i}", line, bounds) for i in range(5)]
+    models = [
+        ParameterModelFunction(
+            f"{i}", twop, bounds, TwoParameterModel(), TwoParameterCoefficientParser()
+        )
+        for i in range(5)
+    ]
 
     mocker.patch.object(CurvefitEstimator, "fit", side_effect=Exception("boo"))
 
@@ -192,11 +196,10 @@ def test_estimator_fit_many_fail_silently(mocker):
 
 
 def test_estimator_adjust_calls_predict_with_other_x(mocker):
-    def line(X, yint, m):
-        return (m * X + yint).squeeze()
-
     bounds = ((0, -np.inf), (np.inf, np.inf))
-    mymodel = ParameterModelFunction("line", line, bounds)
+    mymodel = ParameterModelFunction(
+        "2P", twop, bounds, TwoParameterModel(), TwoParameterCoefficientParser()
+    )
 
     X = np.linspace(1, 10, 10).reshape(-1, 1)
     y = np.linspace(1, 10, 10)
