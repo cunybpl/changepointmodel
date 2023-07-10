@@ -7,9 +7,8 @@ from typing import List, Tuple, Union, TypeVar, Generic, Callable, Optional
 from .nptypes import NByOneNDArray, OneDimNDArray
 import numpy as np
 
-from .calc import tstat, dpop
-from .calc import metrics
-from .calc import loads
+from .calc import tstat, dpop, metrics, loads, models, bounds
+
 
 from typing_extensions import Protocol
 
@@ -52,6 +51,9 @@ class EnergyParameterModelCoefficients(object):
     yint: float
     slopes: List[float]
     changepoints: List[float] = dataclasses.field(default_factory=lambda: [])
+
+    def n_params(self) -> int:
+        return 1 + len(self.slopes) + len(self.changepoints)
 
 
 class YinterceptMixin(object):
@@ -191,10 +193,21 @@ class CvRmseMetricMixin(object):
         return metrics.cvrmse(y, y_pred)
 
 
+class AdjR2MetricMixin(object):
+    def adjusted_r2(
+        self,
+        y: OneDimNDArray[np.float64],
+        y_pred: OneDimNDArray[np.float64],
+        coeffs: EnergyParameterModelCoefficients,
+    ) -> Union[float, OneDimNDArray[np.float64]]:
+        return metrics.adjusted_r2_score(y, y_pred, coeffs.n_params())
+
+
 class AllMetricsMixin(
     R2MetricMixin,
     CvRmseMetricMixin,
     RmseMetricMixin,
+    AdjR2MetricMixin,
 ):
     ...
 
@@ -619,6 +632,14 @@ class ParameterModelFunction(
     ) -> Union[float, OneDimNDArray[np.float64]]:
         return self._parameter_model.rmse(y, y_pred)
 
+    def adjusted_r2(
+        self,
+        y: OneDimNDArray[np.float64],
+        y_pred: OneDimNDArray[np.float64],
+        coeffs: Tuple[float, ...],
+    ) -> Union[float, OneDimNDArray[np.float64]]:
+        return self._parameter_model.adjusted_r2(y, y_pred, self.parse_coeffs(coeffs))
+
     def tstat(
         self,
         X: OneDimNDArray[np.float64],
@@ -650,4 +671,101 @@ class ParameterModelFunction(
 # TODO factory methods for ParameterModelFunctionExt ... makes concrete from generic class above.
 
 
-# def twop_model(name='2P') -> ParameterModelFunction[]
+def twop_model(
+    name="2P",
+) -> ParameterModelFunction[TwoParameterCallable, TwoParameterModel]:
+    """Since v3.1 Default factory method for a twop energy model.
+
+    Args:
+        name (str, optional): The name of the model. Defaults to "2P".
+
+    Returns:
+        ParameterModelFunction[TwoParameterCallable, TwoParameterModel]: A ParameterModelFunction instance that can be given to estimator.
+    """
+    return ParameterModelFunction(
+        name=name,
+        f=models.twop,
+        bounds=bounds.twop,
+        parameter_model=TwoParameterModel(),
+        coefficients_parser=TwoParameterCoefficientParser(),
+    )
+
+
+def threepc_model(
+    name="3PC",
+) -> ParameterModelFunction[ThreeParameterCallable, ThreeParameterCoolingModel]:
+    """Since v3.1 Default factory method for a threepc energy model.
+
+    Args:
+        name (str, optional): The name of the model. Defaults to "3PC".
+
+    Returns:
+        ParameterModelFunction[ThreeParameterCallable, ThreeParameterCoolingModel]: A ParameterModelFunction instance that can be given to estimator.
+    """
+    return ParameterModelFunction(
+        name=name,
+        f=models.threepc,
+        bounds=bounds.threepc,
+        parameter_model=ThreeParameterCoolingModel(),
+        coefficients_parser=ThreeParameterCoefficientsParser(),
+    )
+
+
+def threeph_model(
+    name="3PH",
+) -> ParameterModelFunction[ThreeParameterCallable, ThreeParameterHeatingModel]:
+    """Since v3.1 Default factory method for a threeph energy model.
+
+    Args:
+        name (str, optional): The name of the model. Defaults to "3PH".
+
+    Returns:
+        ParameterModelFunction[ThreeParameterCallable, ThreeParameterHeatingModel]: A ParameterModelFunction instance that can be given to estimator.
+    """
+    return ParameterModelFunction(
+        name=name,
+        f=models.threeph,
+        bounds=bounds.threeph,
+        parameter_model=ThreeParameterHeatingModel(),
+        coefficients_parser=ThreeParameterCoefficientsParser(),
+    )
+
+
+def fourp_model(
+    name="4P",
+) -> ParameterModelFunction[FourParameterCallable, FourParameterModel]:
+    """Since v3.1 Default factory method for a fourp energy model.
+
+    Args:
+        name (str, optional): The name of the model. Defaults to "4P".
+
+    Returns:
+        ParameterModelFunction[FourParameterCallable, FourParameterModel]: A ParameterModelFunction instance that can be given to estimator.
+    """
+    return ParameterModelFunction(
+        name=name,
+        f=models.fourp,
+        bounds=bounds.fourp,
+        parameter_model=FourParameterModel(),
+        coefficients_parser=FourParameterCoefficientsParser(),
+    )
+
+
+def fivep_model(
+    name="5P",
+) -> ParameterModelFunction[FiveParameterCallable, FiveParameterModel]:
+    """Since v3.1 Default factory method for a fivep energy model.
+
+    Args:
+        name (str, optional): The name of the model. Defaults to "5P".
+
+    Returns:
+        ParameterModelFunction[FiveParameterCallable, FiveParameterModel]: A ParameterModelFunction instance that can be given to the estimator
+    """
+    return ParameterModelFunction(
+        name=name,
+        f=models.fivep,
+        bounds=bounds.fivep,
+        parameter_model=FiveParameterModel(),
+        coefficients_parser=FiveParameterCoefficientsParser(),
+    )

@@ -1,4 +1,6 @@
-""" Derive the loads from the estimator
+"""NOTE: _deprecated from v3.1_
+
+ Derive the loads from the estimator. 
 """
 import abc
 import numpy as np
@@ -8,6 +10,16 @@ from typing import Optional, Tuple, Generic, TypeVar
 from .estimator import EnergyChangepointEstimator
 
 from .calc import loads as _loads
+
+import warnings
+
+_deprec = """
+The loads module is deprecrecated since 3.1 and may eventually be removed. 
+Access model loads directly on an estimator instance using the `load` method instead. 
+>>> estimator.load()
+"""
+warnings.warn(_deprec, DeprecationWarning, stacklevel=2)
+
 
 from .pmodels import (
     ParamaterModelCallableT,

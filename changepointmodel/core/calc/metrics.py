@@ -60,3 +60,21 @@ def cvrmse(
     """
     rmse = sklmetrics.mean_squared_error(y, y_pred, squared=False, **kwargs)
     return rmse / np.mean(y)  # type: ignore
+
+
+def adjusted_r2_score(
+    y: OneDimNDArray[np.float64], y_pred: OneDimNDArray[np.float64], p: int = 1
+) -> Union[float, OneDimNDArray[np.float64]]:
+    """Calculate the adjusted r2
+
+    Args:
+        y (OneDimNDArray[np.float64]): original y values.
+        y_pred (OneDimNDArray[np.float64]): predicted y values
+        p (int, optional): Number of parameters in the model. Defaults to 1.
+
+    Returns:
+        Union[float, OneDimNDArray[np.float64]]: The adjusted_r2 or array of scores if weighted
+    """
+    r2 = r2_score(y, y_pred)
+    n = len(y)
+    return 1 - (1 - r2) * (n - 1) / (n - p - 1)

@@ -1,6 +1,19 @@
 """ These are wrappers around sklearn.metrics interface. They can interop with sklearn scorers or 
 can be used on their own.
 """
+import warnings
+
+
+_deprec = """
+The scoring module is deprecrecated since 3.1 and may eventually be removed. 
+Access model scores directly on an estimator instance using the `load` method instead. 
+>>> estimator.r2()
+>>> estimator.cvrmse() 
+>>> estimator.tstat() 
+etc. 
+See `estimator.py` for details.
+"""
+warnings.warn(_deprec, DeprecationWarning, stacklevel=2)
 
 import abc
 from dataclasses import dataclass

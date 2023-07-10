@@ -1,4 +1,7 @@
-"""Some factory methods for configuration and generating result pydantic schemas to and from internals.
+"""
+_This module is deprecated since v3.1_ 
+
+Some factory methods for configuration and generating result pydantic schemas to and from internals.
 
 Some of the configuration is complicated to produce the vast amount of results we require along with a model. (We used to call this the post-modeling calcs at BPL)
 These are here as higher level abstractions that help keep all the library components loosely coupled but still able to work together. While we are take some 
@@ -16,7 +19,14 @@ from . import loads
 from dataclasses import dataclass
 from . import pmodels as pmodels
 
-from .pmodels import EnergyParameterModelT, ParamaterModelCallableT
+from .calc import models, bounds
+import warnings
+
+_deprec = """
+The factories module is deprecrecated since 3.1 and may eventually be removed. 
+Access model factory methods from the `pmodels` module instead.
+"""
+warnings.warn(_deprec, DeprecationWarning, stacklevel=2)
 
 
 class EnergyModelConfigurationError(TypeError):
@@ -24,19 +34,23 @@ class EnergyModelConfigurationError(TypeError):
 
 
 @dataclass
-class EnergyModel(Generic[ParamaterModelCallableT, EnergyParameterModelT]):
+class EnergyModel(
+    Generic[pmodels.ParamaterModelCallableT, pmodels.EnergyParameterModelT]
+):
     """The purpose of this container object is to keep the correct ParameterModelFunction
     and LoadHandler in the same place.
     """
 
     model: pmodels.ParameterModelFunction[
-        ParamaterModelCallableT, EnergyParameterModelT
+        pmodels.ParamaterModelCallableT, pmodels.EnergyParameterModelT
     ]
-    load_handler: loads.AbstractLoadHandler[EnergyParameterModelT]
+    load_handler: loads.AbstractLoadHandler[pmodels.EnergyParameterModelT]
 
     def create_estimator(
         self,
-    ) -> EnergyChangepointEstimator[ParamaterModelCallableT, EnergyParameterModelT]:
+    ) -> EnergyChangepointEstimator[
+        pmodels.ParamaterModelCallableT, pmodels.EnergyParameterModelT
+    ]:
         """Spawn a new estimator from the model.
 
         Returns:
@@ -57,17 +71,19 @@ class EnergyModel(Generic[ParamaterModelCallableT, EnergyParameterModelT]):
         return loads.EnergyChangepointLoadsAggregator(handler=self.load_handler)
 
 
-class EnergyModelFactory(Generic[ParamaterModelCallableT, EnergyParameterModelT]):
+class EnergyModelFactory(
+    Generic[pmodels.ParamaterModelCallableT, pmodels.EnergyParameterModelT]
+):
     @classmethod
     def create(
         cls,
         name: str,
-        f: ParamaterModelCallableT,
+        f: pmodels.ParamaterModelCallableT,
         b: Union[pmodels.BoundCallable, pmodels.Bound],
         parser: pmodels.ICoefficientParser,
-        parameter_model: EnergyParameterModelT,
-        load_handler: loads.AbstractLoadHandler[EnergyParameterModelT],
-    ) -> EnergyModel[ParamaterModelCallableT, EnergyParameterModelT]:
+        parameter_model: pmodels.EnergyParameterModelT,
+        load_handler: loads.AbstractLoadHandler[pmodels.EnergyParameterModelT],
+    ) -> EnergyModel[pmodels.ParamaterModelCallableT, pmodels.EnergyParameterModelT]:
         """Construct an model and a loads factory simultaneously.
         Creates a convenient container object which will help keep model dependent
         calculations together within more complicated workflows.
