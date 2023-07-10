@@ -77,4 +77,4 @@ def adjusted_r2_score(
     """
     r2 = r2_score(y, y_pred)
     n = len(y)
-    return 1 - (1 - r2) * (n - 1) / (n - p - 1)
+    return 1 - ((n - 1) / n - p) * (1 - r2)

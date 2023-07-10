@@ -1,4 +1,10 @@
 from changepointmodel.core import pmodels as models
+from changepointmodel.core.pmodels.coeffs_parser import (
+    ThreeParameterCoefficientsParser,
+    FourParameterCoefficientsParser,
+    FiveParameterCoefficientsParser,
+    TwoParameterCoefficientParser,
+)
 from changepointmodel.core import loads
 from changepointmodel.core.scoring import Scorer, R2, Cvrmse, ScoreEval
 from changepointmodel.core.schemas import CurvefitEstimatorDataModel
@@ -20,14 +26,14 @@ def test_savings_integration_with_pre_and_post(
     input_data_post = CurvefitEstimatorDataModel(X=Xdata_post, y=ydata_post)
 
     # configure correct model dependent handlers for 3pc
-    parser_3pc = models.ThreeParameterCoefficientsParser()
+    parser_3pc = ThreeParameterCoefficientsParser()
     threep_model = models.ThreeParameterCoolingModel()
     cooling = loads.CoolingLoad()
     heating = loads.HeatingLoad()
     load_handler_3pc = loads.ThreeParameterLoadHandler(threep_model, cooling, heating)
 
     # configure correct model dependent handlers for 4p
-    parser_4p = models.FourParameterCoefficientsParser()
+    parser_4p = FourParameterCoefficientsParser()
     fourp_model = models.FourParameterModel()
     load_handler_4p = loads.FourParameterLoadHandler(fourp_model, cooling, heating)
 

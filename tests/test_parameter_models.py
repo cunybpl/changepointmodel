@@ -1,19 +1,23 @@
 from changepointmodel.core.pmodels import (
-    FiveParameterCoefficientsParser,
     FiveParameterModel,
-    FourParameterCoefficientsParser,
     FourParameterModel,
     ParameterModelFunction,
     ParameterModelFunction,
-    ThreeParameterCoefficientsParser,
     ThreeParameterCoolingModel,
     ThreeParameterHeatingModel,
-    TwoParameterCoefficientParser,
     TwoParameterModel,
-    YinterceptMixin,
     EnergyParameterModelCoefficients,
 )
 import numpy as np
+
+
+from changepointmodel.core.pmodels.base import YinterceptMixin
+from changepointmodel.core.pmodels.coeffs_parser import (
+    TwoParameterCoefficientParser,
+    ThreeParameterCoefficientsParser,
+    FiveParameterCoefficientsParser,
+    FourParameterCoefficientsParser,
+)
 
 
 def test_yinterceptmixin():

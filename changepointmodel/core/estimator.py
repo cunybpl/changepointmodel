@@ -72,7 +72,7 @@ class CurvefitEstimator(BaseEstimator, RegressorMixin):  # type: ignore
         jac: Union[
             str, Callable[[npt.NDArray[np.float64], Any], npt.NDArray[np.float64]], None
         ] = None,
-        lsq_kwargs: Optional[Dict[str, Any]] = {},
+        lsq_kwargs: Optional[Dict[Any, Any]] = {},
     ) -> None:
         self.model_func = model_func
         self.p0 = p0

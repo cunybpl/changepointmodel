@@ -2,8 +2,9 @@ from sklearn.exceptions import NotFittedError
 from changepointmodel.core.pmodels import (
     ParameterModelFunction,
     TwoParameterModel,
-    TwoParameterCoefficientParser,
 )
+from changepointmodel.core.pmodels.coeffs_parser import TwoParameterCoefficientParser
+
 from changepointmodel.core.estimator import CurvefitEstimator
 from changepointmodel.core.calc.models import twop
 import numpy as np

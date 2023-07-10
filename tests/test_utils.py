@@ -3,9 +3,9 @@ from changepointmodel.core.pmodels import (
     EnergyParameterModelCoefficients,
     FourParameterModel,
     ParameterModelFunction,
-    FourParameterCoefficientsParser,
 )
 import numpy as np
+from changepointmodel.core.pmodels.coeffs_parser import FourParameterCoefficientsParser
 
 
 def test_argsort_1d_idx():

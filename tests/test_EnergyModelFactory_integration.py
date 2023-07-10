@@ -1,4 +1,10 @@
 from changepointmodel.core import pmodels as models
+from changepointmodel.core.pmodels.coeffs_parser import (
+    TwoParameterCoefficientParser,
+    ThreeParameterCoefficientsParser,
+    FourParameterCoefficientsParser,
+    FiveParameterCoefficientsParser,
+)
 from changepointmodel.core import loads
 from changepointmodel.core.scoring import Scorer, R2, Cvrmse, ScoreEval
 from changepointmodel.core.schemas import CurvefitEstimatorDataModel
@@ -15,7 +21,7 @@ def test_energymodelfactory_integration_with_2p(generated_2p_data):
     input_data = CurvefitEstimatorDataModel(X=Xdata, y=ydata)
 
     # configure correct model dependent handlers
-    parser = models.TwoParameterCoefficientParser()
+    parser = TwoParameterCoefficientParser()
     twop_model = models.TwoParameterModel()
     cooling = loads.CoolingLoad()
     heating = loads.HeatingLoad()
@@ -70,7 +76,7 @@ def test_integration_with_3pc(generated_3pc_data):
     input_data = CurvefitEstimatorDataModel(X=Xdata, y=ydata)
 
     # configure correct model dependent handlers
-    parser = models.ThreeParameterCoefficientsParser()
+    parser = ThreeParameterCoefficientsParser()
     threep_model = models.ThreeParameterCoolingModel()
     cooling = loads.CoolingLoad()
     heating = loads.HeatingLoad()
@@ -128,7 +134,7 @@ def test_integration_with_3ph(generated_3ph_data):
     input_data = CurvefitEstimatorDataModel(X=Xdata, y=ydata)
 
     # configure correct model dependent handlers
-    parser = models.ThreeParameterCoefficientsParser()
+    parser = ThreeParameterCoefficientsParser()
     threep_model = models.ThreeParameterHeatingModel()
     cooling = loads.CoolingLoad()
     heating = loads.HeatingLoad()
@@ -186,7 +192,7 @@ def test_integration_with_4p(generated_4p_data):
     input_data = CurvefitEstimatorDataModel(X=Xdata, y=ydata)
 
     # configure correct model dependent handlers
-    parser = models.FourParameterCoefficientsParser()
+    parser = FourParameterCoefficientsParser()
     fourp_model = models.FourParameterModel()
     cooling = loads.CoolingLoad()
     heating = loads.HeatingLoad()
@@ -239,7 +245,7 @@ def test_integration_with_5p(generated_4p_data):
     input_data = CurvefitEstimatorDataModel(X=Xdata, y=ydata)
 
     # configure correct model dependent handlers
-    parser = models.FiveParameterCoefficientsParser()
+    parser = FiveParameterCoefficientsParser()
     fivep_model = models.FiveParameterModel()
     cooling = loads.CoolingLoad()
     heating = loads.HeatingLoad()
