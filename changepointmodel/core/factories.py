@@ -60,7 +60,7 @@ class EnergyModel(
 
     def create_load_aggregator(
         self,
-    ) -> loads.EnergyChangepointLoadsAggregator[EnergyParameterModelT]:
+    ) -> loads.EnergyChangepointLoadsAggregator[pmodels.EnergyParameterModelT]:
         """Convenience method to get a reference to this model's load.
 
         XXX I added this to create a public API since this part of the object might change.
