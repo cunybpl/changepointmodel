@@ -18,7 +18,6 @@ We have found over time that while doing these individual calculations is not di
 ----
 
 * Loosely coupled, interface oriented and extensible (`changepoint.core`)
-* Ready built high level application tooling (`changepoint.app`)
 * Wrapper classes for `scipy.optimize.curve_fit` that conform to the `scikit-learn` interface. 
 * PEP484 complient (from 3.0.0). Overall strong typing approach. 
 * Heavily tested and production ready 
@@ -199,6 +198,7 @@ It was decided to completely remove `app` package since it relied mainly on thes
 
 Certain class methods on `EnergyChangepointEstimator` were removed (`fit_one`, `fit_many`, etc). These were intended for batch running but proved to be a bit to inflexible for practical use. Methods for sorting data were moved to the `schemas` pydnatic data model as outlined above. 
 
+_NOTE_ Starting with version `3.2` we are moving to pydantic v2 to help validate our input models. This will most certainly break any applications that use this lib as dependency alongside other pydantic based projects. 
 
 ## Demos and training
 
