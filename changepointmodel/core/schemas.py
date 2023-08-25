@@ -39,10 +39,12 @@ def _validate_n_by_one_dim(v: Any) -> NByOneNDArray[np.float64]:
     return arr
 
 
+from typing import List
+
 OneDimNDArrayField = Annotated[
     OneDimNDArray[np.float64],
     BeforeValidator(_validate_one_dim),
-    PlainSerializer(lambda x: str(x.tolist()), return_type="str"),
+    PlainSerializer(lambda x: x.tolist(), return_type=List),
     WithJsonSchema({"type": "array", "items": {"type": "number"}}),
 ]
 
@@ -50,7 +52,7 @@ OneDimNDArrayField = Annotated[
 NByOneNDArrayField = Annotated[
     NByOneNDArray[np.float64],
     BeforeValidator(_validate_n_by_one_dim),
-    PlainSerializer(lambda x: str(x.tolist()), return_type="str"),
+    PlainSerializer(lambda x: x.tolist(), return_type=List),
     WithJsonSchema(
         {"type": "array", "items": {"items": {"type": "number"}, "type": "array"}}
     ),
