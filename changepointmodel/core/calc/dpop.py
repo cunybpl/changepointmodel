@@ -3,7 +3,7 @@ import numpy.typing as npt
 from typing import Tuple, List
 from changepointmodel.core.nptypes import OneDimNDArray
 
-HeatingCoolingPoints = Tuple[float, float]
+HeatingCoolingPoints = Tuple[int, int]
 
 
 def twop(X: OneDimNDArray[np.float64], slope: float) -> HeatingCoolingPoints:
@@ -11,17 +11,17 @@ def twop(X: OneDimNDArray[np.float64], slope: float) -> HeatingCoolingPoints:
 
 
 def threepc(X: OneDimNDArray[np.float64], changepoint: float) -> HeatingCoolingPoints:
-    return 0, sum(X >= changepoint)
+    return 0, int(sum(X >= changepoint))
 
 
 def threeph(X: OneDimNDArray[np.float64], changepoint: float) -> HeatingCoolingPoints:
-    return sum(X <= changepoint), 0
+    return int(sum(X <= changepoint)), 0
 
 
 def fourp(X: OneDimNDArray[np.float64], changepoint: float) -> HeatingCoolingPoints:
     heatnum = sum(X <= changepoint)
     coolnum = sum(X > changepoint)
-    return heatnum, coolnum
+    return int(heatnum), int(coolnum)
 
 
 def fivep(
@@ -31,4 +31,4 @@ def fivep(
 ) -> HeatingCoolingPoints:
     heatnum = sum(X <= lcp)
     coolnum = sum(X >= rcp)
-    return heatnum, coolnum
+    return int(heatnum), int(coolnum)
