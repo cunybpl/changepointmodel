@@ -26,7 +26,6 @@ _deprec = """
 The factories module is deprecrecated since 3.1 and may eventually be removed. 
 Access model factory methods from the `pmodels` module instead.
 """
-warnings.warn(_deprec, DeprecationWarning, stacklevel=2)
 
 
 class EnergyModelConfigurationError(TypeError):
@@ -56,6 +55,7 @@ class EnergyModel(
         Returns:
             EnergyChangepointEstimator: An instance
         """
+        warnings.warn(_deprec, DeprecationWarning, stacklevel=2)
         return EnergyChangepointEstimator(model=self.model)
 
     def create_load_aggregator(
@@ -68,6 +68,7 @@ class EnergyModel(
         Returns:
             loads.EnergyChangepointLoadsAggregator: An Aggregator that initializes the handler.
         """
+        warnings.warn(_deprec, DeprecationWarning, stacklevel=2)
         return loads.EnergyChangepointLoadsAggregator(handler=self.load_handler)
 
 
@@ -102,7 +103,7 @@ class EnergyModelFactory(
         Returns:
             EnergyModel: [description]
         """
-
+        warnings.warn(_deprec, DeprecationWarning, stacklevel=2)
         model = pmodels.ParameterModelFunction(name, f, b, parameter_model, parser)
 
         if not isinstance(

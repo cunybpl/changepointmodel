@@ -18,7 +18,6 @@ The loads module is deprecrecated since 3.1 and may eventually be removed.
 Access model loads directly on an estimator instance using the `load` method instead. 
 >>> estimator.load()
 """
-warnings.warn(_deprec, DeprecationWarning, stacklevel=2)
 
 
 from .pmodels import (
@@ -168,6 +167,7 @@ class AbstractLoadHandler(abc.ABC, Generic[EnergyParameterModelT]):
         heating: ISensitivityLoad,
         base: Optional[IBaseload] = None,
     ):
+        warnings.warn(_deprec, DeprecationWarning, stacklevel=2)
         self._model: EnergyParameterModelT = model
         self._cooling = cooling
         self._heating = heating
@@ -325,6 +325,7 @@ class EnergyChangepointLoadsAggregator(Generic[EnergyParameterModelT]):
         Args:
             handler (AbstractLoadHandler): An instance of a load handler.
         """
+        warnings.warn(_deprec, DeprecationWarning, stacklevel=2)
         self._handler: AbstractLoadHandler[EnergyParameterModelT] = handler
 
     def aggregate(
@@ -346,7 +347,7 @@ class EnergyChangepointLoadsAggregator(Generic[EnergyParameterModelT]):
         Returns:
             Load: The calculated load
         """
-
+        warnings.warn(_deprec, DeprecationWarning, stacklevel=2)
         # check that estimator model type matches the handler's model interface or else we'll have an issue
         # coeff parsing needs to match...
         if not isinstance(

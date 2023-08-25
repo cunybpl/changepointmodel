@@ -6,14 +6,14 @@ import warnings
 
 _deprec = """
 The scoring module is deprecrecated since 3.1 and may eventually be removed. 
-Access model scores directly on an estimator instance using the `load` method instead. 
+Access model scores directly on an estimator instance using the specified method instead or use the `calc` package. 
 >>> estimator.r2()
 >>> estimator.cvrmse() 
 >>> estimator.tstat() 
 etc. 
 See `estimator.py` for details.
 """
-warnings.warn(_deprec, DeprecationWarning, stacklevel=2)
+
 
 import abc
 from dataclasses import dataclass
@@ -133,6 +133,7 @@ class ScoreEval(IEval):
             threshold (float): _description_
             method (Comparator): _description_
         """
+        warnings.warn(_deprec, DeprecationWarning, stacklevel=2)
         self._scorer = scorer
         self._threshold = threshold
         self._method = method
@@ -159,6 +160,7 @@ class Scorer(object):
         Args:
             evals (List[ScoreEval]): _description_
         """
+        warnings.warn(_deprec, DeprecationWarning, stacklevel=2)
         self._evals = evals
 
     def check(

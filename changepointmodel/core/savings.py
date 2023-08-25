@@ -6,19 +6,16 @@ from .nptypes import NByOneNDArray, OneDimNDArray
 from .estimator import EnergyChangepointEstimator
 from .calc import savings as libsavings
 
-from .scoring import Cvrmse
 from typing import Optional, Tuple, TypeVar
 
 import numpy.typing as npt
 
-_cvrmse_score = Cvrmse()
+from .calc import metrics
+
+_cvrmse_score = metrics.cvrmse
 
 import abc
 from .pmodels import ParamaterModelCallableT, EnergyParameterModelT
-
-
-# I have to pass the pydantic ndarray objects as fields so
-# that we can validate the data later.
 
 
 def _get_adjusted(

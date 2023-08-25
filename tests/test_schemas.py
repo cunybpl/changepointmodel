@@ -6,11 +6,8 @@ import pytest
 import pydantic
 import dataclasses
 
-from changepointmodel.core.nptypes import (
-    NByOneNDArrayField,
-    OneDimNDArrayField,
-    AnyByAnyNDArrayField,
-)
+
+from pydantic import ConfigDict
 
 
 def test_curvefitestimatordatamodel_handles_1d_xdata():
@@ -81,17 +78,21 @@ def test_curvefitestimatordatamodel_returns_valid_json():
 def test_openapi_schemas_are_correctly_generated_for_custom_nptypes():
     @dataclasses.dataclass
     class Check:
-        a: OneDimNDArrayField
-        b: NByOneNDArrayField
-        c: AnyByAnyNDArrayField
+        a: schemas.OneDimNDArrayField
+        b: schemas.NByOneNDArrayField
+
+        model_config = ConfigDict(arbitrary_types_allowed=True)
 
     class CheckModel(pydantic.BaseModel):
         check: Check
         thing: int
         mylist: List[float]
-
-        class Config:
-            json_encoders = {np.ndarray: lambda v: v.tolist()}
+        # TODO[pydantic]: The following keys were removed: `json_encoders`.
+        # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+        model_config = ConfigDict(
+            json_encoders={np.ndarray: lambda v: v.tolist()},
+            arbitrary_types_allowed=True,
+        )
 
     check = Check(
         a=[1, 2, 3],
@@ -106,14 +107,14 @@ def test_openapi_schemas_are_correctly_generated_for_custom_nptypes():
                 3,
             ],
         ],
-        c=[[1, 2, 3], [4, 5, 6]],
     )
     CheckModel(check=check, thing=42, mylist=[7, 8, 9])
-    schema = CheckModel.schema()
+    schema = CheckModel.model_json_schema()
 
-    assert "a" in schema["definitions"]["Check"]["properties"]
-    assert "b" in schema["definitions"]["Check"]["properties"]
-    assert "c" in schema["definitions"]["Check"]["properties"]
+    print(schema)
+
+    assert "a" in schema["$defs"]["Check"]["properties"]
+    assert "b" in schema["$defs"]["Check"]["properties"]
 
     a = {"title": "A", "type": "array", "items": {"type": "number"}}
     b = {
@@ -121,15 +122,9 @@ def test_openapi_schemas_are_correctly_generated_for_custom_nptypes():
         "type": "array",
         "items": {"type": "array", "items": {"type": "number"}},
     }
-    c = {
-        "title": "C",
-        "type": "array",
-        "items": {"type": "array", "items": {"type": "number"}},
-    }
 
-    assert schema["definitions"]["Check"]["properties"]["a"] == a
-    assert schema["definitions"]["Check"]["properties"]["b"] == b
-    assert schema["definitions"]["Check"]["properties"]["c"] == c
+    assert schema["$defs"]["Check"]["properties"]["a"] == a
+    assert schema["$defs"]["Check"]["properties"]["b"] == b
 
 
 def test_schema_returns_sorted_X_y():

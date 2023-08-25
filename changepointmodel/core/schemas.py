@@ -6,55 +6,74 @@ from typing import Any, Dict, Optional, Union
 
 import pydantic
 from .nptypes import (
-    AnyByAnyNDArrayField,
-    OneDimNDArrayField,
-    AnyByAnyNDArray,
+    OneDimNDArray,
+    NByOneNDArray,
     ArgSortRetType,
 )
+
+from pydantic import BeforeValidator, PlainSerializer, WithJsonSchema, ConfigDict
+
+from typing import Annotated, Any
 
 from .utils import argsort_1d_idx
 
 
-class NpConfig:
-    json_encoders = {np.ndarray: lambda v: v.tolist()}
+def _validate_one_dim(v: Any) -> OneDimNDArray[np.float64]:
+    arr = np.array(v, dtype=float)
+    if len(arr.shape) != 1:
+        raise ValueError("Shape of data should be One dimension")
+    return arr
+
+
+def _validate_n_by_one_dim(v: Any) -> NByOneNDArray[np.float64]:
+    arr = np.array(v, dtype=float)
+    if arr.ndim == 1:
+        return arr.reshape(-1, 1)
+
+    if len(arr.shape) != 2:
+        raise ValueError("Shape of data should be M x n")
+
+    if arr.shape[1] != 1:
+        raise ValueError(f"Second dimension must be of size 1, got {arr.shape[1]}")
+
+    return arr
+
+
+OneDimNDArrayField = Annotated[
+    OneDimNDArray[np.float64],
+    BeforeValidator(_validate_one_dim),
+    PlainSerializer(lambda x: str(x.tolist()), return_type="str"),
+    WithJsonSchema({"type": "array", "items": {"type": "number"}}),
+]
+
+
+NByOneNDArrayField = Annotated[
+    NByOneNDArray[np.float64],
+    BeforeValidator(_validate_n_by_one_dim),
+    PlainSerializer(lambda x: str(x.tolist()), return_type="str"),
+    WithJsonSchema(
+        {"type": "array", "items": {"items": {"type": "number"}, "type": "array"}}
+    ),
+]
 
 
 class CurvefitEstimatorDataModel(pydantic.BaseModel):
-    X: Union[OneDimNDArrayField, AnyByAnyNDArrayField]
+    X: NByOneNDArrayField
     y: OneDimNDArrayField
     sigma: Optional[OneDimNDArrayField] = None
     absolute_sigma: Optional[bool] = None
 
-    class Config(NpConfig):
-        ...
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    @pydantic.validator("X")
-    def validate_X(cls, v: AnyByAnyNDArray[np.float64]) -> AnyByAnyNDArray[np.float64]:
-        if v.ndim == 1:  # assure 1d is reshaped according skl spec
-            return v.reshape(-1, 1)
-        # assure that anything else is at least 2d .. NOTE will not check for nested data... just know what your doing...
-        return np.atleast_2d(v)
+    @pydantic.model_validator(mode="after")
+    def validate_all(self) -> "CurvefitEstimatorDataModel":
+        if len(self.X) != len(self.y):
+            raise ValueError("X and y len must be the same.")
 
-    @pydantic.root_validator
-    def validate_all(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        if values["y"] is None and values["sigma"] is not None:
-            raise ValueError("Cannot pass `sigma` without `y`")
+        if self.sigma is not None and len(self.sigma) != len(self.X):
+            raise ValueError("len of sigma must match len X and y")
 
-        if (
-            values["y"] is not None
-        ):  # if we are only passing X then we can skip validation
-            xlen = len(values["X"])
-            ylen = len(values["y"])
-
-            if values["sigma"] is None:
-                if xlen != ylen:
-                    raise ValueError("X and y lengths do not match.")
-            else:
-                siglen = len(values["sigma"])
-                if not xlen == ylen == siglen:
-                    raise ValueError("X, y and sigma lengths to not match.")
-
-        return values
+        return self
 
     def sorted_X_y(self) -> ArgSortRetType:
         """Helper to sort X and y. Also returns the original idx ordering to reverse.
