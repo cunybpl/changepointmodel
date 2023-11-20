@@ -17,6 +17,8 @@ _deprec = """
 The loads module is deprecrecated since 3.1 and may eventually be removed. 
 Access model loads directly on an estimator instance using the `load` method instead. 
 >>> estimator.load()
+or 
+>>> esrtimator.load(scalar=30.437) # to scale out avg_per_day values to gross monthly.
 """
 
 

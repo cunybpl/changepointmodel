@@ -170,3 +170,31 @@ def test_estimator_for_methods(mocker):
     load_ = est.load()
     assert_almost_equal(load_.cooling, 54.999605, decimal=1)
     assert_almost_equal(load_.base, sum(X) - load_.cooling, decimal=1)
+
+
+def test_estimator_scalar_handling_for_load_and_nac(mocker):
+    bounds = ((0, -np.inf), (np.inf, np.inf))
+    mymodel = ParameterModelFunction(
+        "2P", twop, bounds, TwoParameterModel(), TwoParameterCoefficientParser()
+    )
+
+    est = EnergyChangepointEstimator(model=mymodel)
+    mock = mocker.spy(est, "fit")
+
+    X = np.linspace(1, 10, 10).reshape(-1, 1)
+    y = np.linspace(1, 10, 10)
+
+    est.fit(X, y)
+    mock.assert_called_once()
+
+    load_not_scaled = est.load()
+    load_scaled = est.load(scalar=30.437)
+
+    assert_almost_equal(load_scaled.base, load_not_scaled.base * 30.437)
+    assert_almost_equal(load_scaled.cooling, load_not_scaled.cooling * 30.437)
+    assert_almost_equal(load_scaled.heating, load_not_scaled.heating * 30.437)
+
+    nac_not_scaled = est.nac(X)
+    nac_scaled = est.nac(X, scalar=30.437)
+
+    assert_almost_equal(nac_scaled, nac_not_scaled * 30.437)

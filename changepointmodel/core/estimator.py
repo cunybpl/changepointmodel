@@ -1,4 +1,4 @@
-from typing import Generator, List, Optional, Tuple, Callable, Any, Union, Dict, Generic
+from typing import List, Optional, Tuple, Callable, Any, Union, Dict, Generic
 import numpy as np
 
 from .nptypes import (
@@ -54,9 +54,6 @@ def check_not_fitted(method: Callable[..., Any]) -> Callable[..., Any]:
             ) from err
 
     return inner
-
-
-import numpy as np
 
 
 class CurvefitEstimator(BaseEstimator, RegressorMixin):  # type: ignore
@@ -455,11 +452,46 @@ class EnergyChangepointEstimator(BaseEstimator, RegressorMixin, Generic[Paramate
         return self.model.shape(self.coeffs)
 
     @check_not_fitted
-    def load(self) -> Load:
-        """Calculate the load for this energy model.
+    def load(self, scalar: Optional[float] = None) -> Load:
+        """Calculate the load for this energy model. If you are working with monthly data and
+        your original model was fit using per_day values provide scalar with `30.437` to scale
+        the result to gross total for the modeling period.
+
+        Args:
+            scalar (Optional[float], optional): A scalar value. Set to `30.437` to scale avg_day_per_month to gross month.
+                Defaults to None.
 
         Returns:
             Load: The baseload, heating and cooling load.
         """
         assert self.model is not None
-        return self.model.load(self.X.squeeze(), self.pred_y, self.coeffs)
+
+        load = self.model.load(self.X.squeeze(), self.pred_y, self.coeffs)
+        if scalar:
+            load.base *= scalar
+            load.cooling *= scalar
+            load.heating *= scalar
+        return load
+
+    @check_not_fitted
+    def nac(
+        self, X: NByOneNDArray[np.float64], scalar: Optional[float] = None
+    ) -> float:
+        """Normalized Annual consumption calculation. If you are working with monthly data and
+        your original model was fit using per_day values provide scalar with `30.437` to scale
+        the result to gross total for the modeling period.
+
+        Args:
+            X (NByOneNDArray[np.float64]): The X array. Usually normalized temperature data (monthly)
+            scalar (Optional[float], optional): A scalar value. Set to `30.437` to scale avg_day_per_month to gross month.
+                Defaults to None.
+
+        Returns:
+            float: The nac value. The sum of the y_pred given your normalized values multiplied by scalar if provided.
+        """
+        assert self.model is not None
+
+        if scalar:
+            return float(np.sum(self.estimator_.predict(X))) * scalar
+        else:
+            return float(np.sum(self.estimator_.predict(X)))

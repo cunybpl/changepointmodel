@@ -8,6 +8,16 @@ from dataclasses import dataclass
 import numpy as np
 from .pmodels import ParamaterModelCallableT, EnergyParameterModelT
 
+import warnings
+
+_deprec = """
+The predsum module is deprecrecated since 3.3 and may eventually be removed. 
+The same calculation can be performed directly on the estimator using `nac` method.
+>>> estimator.nac()
+or 
+>>> estimator.nac(scalar=30.437)  # to scale out avg_day values to monthly gross
+"""
+
 
 @dataclass
 class PredictedSum(object):
@@ -22,6 +32,7 @@ class PredictedSumCalculator(object):
             X (NByOneNDArray): A 1d array of data to be predicted on.
         """
         self._X = X
+        warnings.warn(_deprec, DeprecationWarning, stacklevel=2)
 
     def calculate(
         self,
