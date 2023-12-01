@@ -34,7 +34,7 @@ def adjusted(
     # removed 3.1.0a0 -- removed here
     # scalar = 1 if scalar is None else scalar
     total_savings = gross_adjusted_pred_y - gross_post_y  # * scalar
-    percent_savings = total_savings / gross_post_y
+    percent_savings = total_savings / gross_adjusted_pred_y
 
     fractional_savings = np.absolute(
         uncertainties.fractional_avoided_energy_use(gross_adjusted_pred_y, gross_post_y)
